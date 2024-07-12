@@ -1,0 +1,12 @@
+*.DS_store
+*.pdf
+.Rproj.user
+.Rhistory
+.RData
+.rda
+.csv
+.Ruserdata
+data
+DLM-Research.Rproj
+SRC-Presentation_cache
+SRC-Presentation_files

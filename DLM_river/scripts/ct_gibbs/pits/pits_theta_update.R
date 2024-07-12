@@ -1,0 +1,24 @@
+update_theta <- function() {
+  
+  rejections <- 0
+  phi_mat <- matrix(NA, nrow = n_freq, ncol = n)
+  
+  for (i in 1:p) {
+    
+    # Use the current thetas and F to create a ystar time series
+    ystar <- y - colSums(t(F_mat[,-i]) * theta_now[-i,, drop = FALSE])
+    
+    # Update theta_i with the appropriate method
+    if (i != 1) {
+      # pits <- pits_update(ystar, F_mat[, i], m0[i], C0[i, i], W[i, i], sigma2_now, theta_now[i,], time_diff)
+      pits <- pits_update_constrained(ystar, F_mat[, i], m0[i], C0[i, i], W[i, i], sigma2_now, theta_now[i,], time_diff, pseu_family, pseu_params)
+      theta_now[i,] <- pits$theta
+      rejections <- rejections + pits$rejections
+      phi_mat[i-1,] <- pits$phi
+    } else {
+      theta_now[i,] <- ffbs_update(ystar, F_mat[, i], m0[i], C0[i, i], W[i, i], sigma2_now, time_diff)
+    }
+  }
+  
+  list(theta = theta_now, rejections = rejections, phi_mat = phi_mat)
+}
