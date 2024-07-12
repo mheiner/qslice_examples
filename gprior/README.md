@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # gprior
 
 ## Matthew Heiner, Samuel Johnson, and David Dahl

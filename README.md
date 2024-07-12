@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # Qslice Examples
 
 Code to reproduce illustrations and simulation studies from *Quantile Slice Sampling* 
