@@ -1,5 +1,12 @@
 ## Authors: Matt Heiner, Sam Johnson
 
+doextra <- function(n) {
+  Z <- matrix(rnorm(2*n^2), ncol = n)
+  ZtZ <- crossprod(Z)
+  CZtZ <- chol(ZtZ)
+  chol2inv(CZtZ)
+}
+
 update_beta <- function(state, prior, data) {
 
   ## state is a list with: g, psi
@@ -43,8 +50,13 @@ update_g <- function(state, prior, data, sampler) {
       ##  mean is beta_0 and
       ##  Cov is inv_XtX * g / psi
       ## Prior on g is hyper-g (Liang et al, 2008) on (0, g_max)
-
+      
       if (lgg <= log(prior$g_max)) {
+        
+        if (isTRUE(sampler$doextra)) {
+          doextra(n = sampler$n_extra)
+        }
+        
         qq <- state$psi * qq1 / exp(lgg)
         logdet <- data$p * lgg # only this part is a fn of g
         lpri <- prior$a_g * log1p(exp(lgg))
@@ -63,6 +75,11 @@ update_g <- function(state, prior, data, sampler) {
       ## Prior on g is hyper-g (Liang et al, 2008) on (0, g_max)
 
       if ((gg > 0.0) & (gg <= prior$g_max)) {
+        
+        if (isTRUE(sampler$doextra)) {
+          doextra(n = sampler$n_extra)
+        }
+        
         qq <- state$psi * qq1 / gg
         logdet <- data$p * log(gg) # only this part is a fn of g
         lpri <- prior$a_g * log(gg + 1.0)

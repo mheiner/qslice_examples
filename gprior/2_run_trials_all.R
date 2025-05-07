@@ -3,7 +3,7 @@ ii <- as.numeric(args[1])  # job id
 dte <- as.numeric(args[2])
 
 ##### for testing
-# ii <- 1944
+# ii <- 1940
 # dte <- 240520
 #####
 
@@ -37,9 +37,10 @@ state
 
 sampler <- list()
 
-sampler$g <- list(type = "stepping", subtype = NA, logG = logG,
-                  w = ifelse(logG, 5.0, 50.0))
-
+sampler$g <- list(type = "stepping", subtype = NA, 
+                  logG = logG,
+                  w = ifelse(logG, 5.0, 50.0),
+                  doextra = FALSE)
 
 ### initial burn-in
 mc_out <- mcmc_gprior(state = state, prior = prior, data = dat,
@@ -145,11 +146,19 @@ if (type %in% c("rw", "stepping", "latent")) { # will require tuning
 }
 
 ### timing run
+
+sampler$g$doextra <- run_info$n_extra > 0 # should target evaluation include superfluous matrix computations?
+if (isTRUE(sampler$g$doextra)) {
+  sampler$g$n_extra <- run_info$n_extra
+}
+
 mc_time <- time_gprior(state = state, prior = prior, data = dat,
                        sampler = sampler, n_iter = n_iter)
 
 mc_time$timing
 (samp_p_sec <- mc_time$timing$EffSamp / mc_time$timing$userTime)
+
+sampler$g$doextra <- FALSE
 
 
 ### diagnostics
@@ -173,6 +182,7 @@ if (type == "Qslice") {
 tempDf <- data.frame(target = target,
                      type = type,
                      subtype = subtype,
+                     n_extra = run_info$n_extra,
                      rep = run_info$rep,
                      run_id = run_id,
                      ii = ii,
@@ -192,6 +202,7 @@ write.table(tempDf, file = paste0("output/",
                                   "target", target,
                                   "_type", type,
                                   "_subtype", subtype,
+                                  "_nextra", run_info$n_extra,
                                   "_rep", run_info$rep,
                                   "_dte", dte,
                                   ".csv"),
