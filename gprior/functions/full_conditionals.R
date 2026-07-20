@@ -1,14 +1,13 @@
 ## Authors: Matt Heiner, Sam Johnson
 
 doextra <- function(n) {
-  Z <- matrix(rnorm(2*n^2), ncol = n)
+  Z <- matrix(rnorm(2 * n^2), ncol = n)
   ZtZ <- crossprod(Z)
   CZtZ <- chol(ZtZ)
   chol2inv(CZtZ)
 }
 
 update_beta <- function(state, prior, data) {
-
   ## state is a list with: g, psi
   ## prior is a list with: beta_0
   ## data is a list with: inv_chol_XtX inv(chol(XtX)),
@@ -22,21 +21,20 @@ update_beta <- function(state, prior, data) {
 }
 
 update_psi <- function(state, prior, data) {
-
   ## state is a list with: g, beta
   ## prior is a list with: a_0, b_0, beta_0
   ## data is a list with: n, y, X, XtX
 
-  a_n <- prior$a_0 + 0.5*(data$n + data$p)
+  a_n <- prior$a_0 + 0.5 * (data$n + data$p)
   residuals <- data$y - drop(data$X %*% state$beta)
   beta_diff <- state$beta - prior$beta_0
-  b_n <- prior$b_0 + 0.5 * sum(residuals^2) +
+  b_n <- prior$b_0 +
+    0.5 * sum(residuals^2) +
     0.5 * drop(beta_diff %*% data$XtX %*% beta_diff) / state$g
   rgamma(1, a_n, b_n)
 }
 
 update_g <- function(state, prior, data, sampler) {
-
   ## state is list with: g (current value), psi, beta, and latent_s (latent slice)
   ## prior is list with: beta_0, g_max
   ## data is list with: X, logdet_XtX, p = ncol(X)
@@ -50,13 +48,12 @@ update_g <- function(state, prior, data, sampler) {
       ##  mean is beta_0 and
       ##  Cov is inv_XtX * g / psi
       ## Prior on g is hyper-g (Liang et al, 2008) on (0, g_max)
-      
+
       if (lgg <= log(prior$g_max)) {
-        
         if (isTRUE(sampler$doextra)) {
           doextra(n = sampler$n_extra)
         }
-        
+
         qq <- state$psi * qq1 / exp(lgg)
         logdet <- data$p * lgg # only this part is a fn of g
         lpri <- prior$a_g * log1p(exp(lgg))
@@ -75,11 +72,10 @@ update_g <- function(state, prior, data, sampler) {
       ## Prior on g is hyper-g (Liang et al, 2008) on (0, g_max)
 
       if ((gg > 0.0) & (gg <= prior$g_max)) {
-        
         if (isTRUE(sampler$doextra)) {
           doextra(n = sampler$n_extra)
         }
-        
+
         qq <- state$psi * qq1 / gg
         logdet <- data$p * log(gg) # only this part is a fn of g
         lpri <- prior$a_g * log(gg + 1.0)
@@ -94,39 +90,46 @@ update_g <- function(state, prior, data, sampler) {
 
   g_old <- ifelse(sampler$logG, log(state$g), state$g)
   support <- c(0.0, prior$g_max)
-  if(sampler$logG) {
+  if (sampler$logG) {
     support <- log(support)
   }
 
   if (sampler$subtype %in% c("Laplace", "Laplace_wide")) {
-
-    tmp_pseu <- lapprox(log_target = ltarget,
-                        init = g_old,
-                        family = "cauchy",
-                        sc_adj = sampler$sc_adj,
-                        lb = support[1], ub = support[2],
-                        maxit = sampler$maxit)
+    tmp_pseu <- lapprox(
+      log_target = ltarget,
+      init = g_old,
+      family = "cauchy",
+      sc_adj = sampler$sc_adj,
+      lb = support[1],
+      ub = support[2],
+      maxit = sampler$maxit
+    )
 
     sampler[["loc"]] <- tmp_pseu$params$loc
     sampler[["sc"]] <- tmp_pseu$params$sc
     sampler[["degf"]] <- 1
 
     sampler[["pseudo"]] <- tmp_pseu
-
-  } else if (sampler$subtype %in% c("Laplace_analytic", "Laplace_analytic_wide")) {
-
-    tmp_pseu <- lapxt_g(p = data$p, psi = state$psi, Q = qq1, a = prior$a_g,
-                        sc_adj = sampler$sc_adj, degf = sampler$degf,
-                        lb = support[1], ub = support[2],
-                        logG = sampler$logG)
+  } else if (
+    sampler$subtype %in% c("Laplace_analytic", "Laplace_analytic_wide")
+  ) {
+    tmp_pseu <- lapxt_g(
+      p = data$p,
+      psi = state$psi,
+      Q = qq1,
+      a = prior$a_g,
+      sc_adj = sampler$sc_adj,
+      degf = sampler$degf,
+      lb = support[1],
+      ub = support[2],
+      logG = sampler$logG
+    )
 
     sampler[["loc"]] <- tmp_pseu$params$loc
     sampler[["sc"]] <- tmp_pseu$params$sc
 
     sampler[["pseudo"]] <- tmp_pseu
-
   } else if (sampler$subtype %in% c("MM", "MM_wide")) {
-
     stopifnot(isFALSE(sampler$logG))
 
     A <- 0.5 * (prior$a_g + data$p - 2)
@@ -136,17 +139,17 @@ update_g <- function(state, prior, data, sampler) {
     sampler[["sc"]] <- sampler$sc_adj * B / ((A - 1.0) * sqrt(A - 2.0))
     sampler[["degf"]] <- sampler$degf
 
-    tmp_pseu <- pseudo_list(family = "t",
-                            params = list(loc = sampler$loc,
-                                          sc = sampler$sc,
-                                          degf = sampler$degf),
-                              lb = support[1], ub = support[2])
+    tmp_pseu <- pseudo_list(
+      family = "t",
+      params = list(loc = sampler$loc, sc = sampler$sc, degf = sampler$degf),
+      lb = support[1],
+      ub = support[2]
+    )
 
     sampler[["pseudo"]] <- tmp_pseu
   }
 
   if (sampler$type == "Gibbs") {
-
     stopifnot(isFALSE(sampler$logG) && prior$a_g == 0)
 
     a1 <- data$p / 2.0 - 1.0
@@ -154,49 +157,43 @@ update_g <- function(state, prior, data, sampler) {
 
     u_max <- pinvgamma(prior$g_max, shape = a1, scale = b1)
     u <- runif(1, min = 0.0, max = u_max)
-    tmp <- list( x = qinvgamma(u, shape = a1, scale = b1),
-                 nEvaluations = 0)
-
+    tmp <- list(x = qinvgamma(u, shape = a1, scale = b1), nEvaluations = 0)
   } else if (sampler$type == "rw") {
-
-    tmp <- random_walk_sampler(lf = ltarget, support = support,
-                               x_0 = g_old, sampler$c)
+    tmp <- random_walk_sampler(
+      lf = ltarget,
+      support = support,
+      x_0 = g_old,
+      sampler$c
+    )
     tmp$nEvaluations <- 2
-
   } else if (sampler$type == "stepping") {
-
-    tmp <- slice_stepping_out(x = g_old,
-                              log_target = ltarget,
-                              w = sampler$w)
-
+    tmp <- slice_stepping_out(x = g_old, log_target = ltarget, w = sampler$w)
   } else if (sampler$type == "gess") {
-
-    tmp <- slice_genelliptical(x = g_old,
-                               log_target = ltarget,
-                               mu = sampler$loc,
-                               sigma = sampler$sc,
-                               df = sampler$degf)
-
+    tmp <- slice_genelliptical(
+      x = g_old,
+      log_target = ltarget,
+      mu = sampler$loc,
+      sigma = sampler$sc,
+      df = sampler$degf
+    )
   } else if (sampler$type == "latent") {
-
-    tmp <- slice_latent(x = g_old, s = state$latent_s,
-                        log_target = ltarget,
-                        rate = sampler$rate)
+    tmp <- slice_latent(
+      x = g_old,
+      s = state$latent_s,
+      log_target = ltarget,
+      rate = sampler$rate
+    )
     state$latent_s <- tmp$s
-
   } else if (sampler$type == "imh") {
-
-    tmp <- imh_pseudo(x = g_old,
-                      log_target = ltarget,
-                      pseudo = sampler$pseudo)
+    tmp <- imh_pseudo(x = g_old, log_target = ltarget, pseudo = sampler$pseudo)
 
     tmp$nEvaluations <- 2
-
   } else if (sampler$type == "Qslice") {
-
-    tmp <- slice_quantile(x = g_old,
-                          log_target = ltarget,
-                          pseudo = sampler$pseudo)
+    tmp <- slice_quantile(
+      x = g_old,
+      log_target = ltarget,
+      pseudo = sampler$pseudo
+    )
   }
 
   state$g <- ifelse(sampler$logG, exp(tmp$x), tmp$x)

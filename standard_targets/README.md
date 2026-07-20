@@ -6,12 +6,10 @@ Benchmarking and performance comparisons among samplers on three standard target
 distributions: normal, gamma, inverse gamma.
 
 The R scripts in this folder are numbered by their order in the workflow sequence. 
-The general workflow is to schedule runs for the desired targets and samplers by round 
-(round 1 is for initial testing of settings within samplers; round 2 is for full
-randomized comparison at selected settings).
+The general workflow is to schedule runs for the desired targets and samplers.
 
 Begin with script `1_setup_trials.R` to produce an 
-initial schedule for a desired target, selected samplers, and round. 
+initial schedule for a desired target and selected samplers. 
 The schedule is saved in the `input` folder. 
 All schedules can be combined and randomized using `1_schedule_all.R`, 
 which will save a complete schedule in `input`. 

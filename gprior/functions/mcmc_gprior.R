@@ -1,6 +1,13 @@
-
-mcmc_gprior <- function(state, prior, data, sampler, n_iter, save = TRUE, prog = 0) {
-
+mcmc_gprior <- function(
+  state,
+  prior,
+  data,
+  sampler,
+  n_iter,
+  n_thin = 1,
+  save = TRUE,
+  prog = 0
+) {
   ## state is a list with: beta, psi, g, and latent_s (latent slice for g), and iter
   ## prior is a list with: beta_0, a_0, b_0, g_max
   ## data is a list with: X, y, p = ncol(X), n = length(y) = nrow(X),
@@ -15,16 +22,21 @@ mcmc_gprior <- function(state, prior, data, sampler, n_iter, save = TRUE, prog =
   }
 
   for (i in 1:n_iter) {
+    for (ii in 1:n_thin) {
+      state$beta <- update_beta(state = state, prior = prior, data = data)
 
-    state$beta <- update_beta(state = state, prior = prior, data = data)
+      state$psi <- update_psi(state = state, prior = prior, data = data)
 
-    state$psi <- update_psi(state = state, prior = prior, data = data)
+      tmp <- update_g(
+        state = state,
+        prior = prior,
+        data = data,
+        sampler = sampler[["g"]]
+      )
+      state <- tmp$state
 
-    tmp <- update_g(state = state, prior = prior, data = data,
-                    sampler = sampler[["g"]])
-    state <- tmp$state
-
-    state$iter <- state$iter + 1
+      state$iter <- state$iter + 1
+    }
 
     if (save) {
       sims[[i]] <- state
@@ -33,47 +45,67 @@ mcmc_gprior <- function(state, prior, data, sampler, n_iter, save = TRUE, prog =
 
     if (prog > 0) {
       if (i %% prog == 0) {
-        cat("Iter ", i, " of ", n_iter, "\n")
+        cat("Sample ", i, " of ", n_iter, "\n")
         timestamp()
       }
     }
-
   }
 
-  list(state = state, prior = prior, data = data, sampler = sampler,
-       save = save, sims = sims, extras = extras, n_iter = n_iter)
+  list(
+    state = state,
+    prior = prior,
+    data = data,
+    sampler = sampler,
+    save = save,
+    sims = sims,
+    extras = extras,
+    n_iter = n_iter
+  )
 }
 
 
-time_gprior <- function(state, prior, data, sampler, n_iter) {
-
+time_gprior <- function(
+  state,
+  prior,
+  data,
+  sampler,
+  n_iter,
+  param,
+  ess_log = TRUE
+) {
   require("coda")
 
   time_out <- system.time({
-    mcmc_out <- mcmc_gprior(state = state,
-                            prior = prior,
-                            data = data,
-                            sampler = sampler,
-                            n_iter = n_iter,
-                            save = TRUE, prog = 0)
+    mcmc_out <- mcmc_gprior(
+      state = state,
+      prior = prior,
+      data = data,
+      sampler = sampler,
+      n_iter = n_iter,
+      save = TRUE,
+      prog = 0
+    )
   })
 
-  draws_g <- sapply(mcmc_out$sims, function(x) x$g)
+  draws <- sapply(mcmc_out$sims, function(x) x[[param]]) # these are always g (not log scale)
 
-  if (sampler[["g"]]$logG) {
-    draws_ess <- log(draws_g) |> coda::as.mcmc()
+  if (isTRUE(ess_log)) {
+    draws_ess <- log(draws) |> coda::as.mcmc()
   } else {
-    draws_ess <- draws_g |> coda::as.mcmc()
+    draws_ess <- draws |> coda::as.mcmc()
   }
 
-  ESS <- min(n_iter, coda::effectiveSize(draws_ess))
-  out_df <- data.frame(nEval = sapply(mcmc_out$extras, function(x) {
-                                          x$nEvaluations
-                                        }) |> sum(),
-                    EffSamp = ESS,
-                    userTime = time_out['user.self'],
-                    sysTime = time_out['sys.self'],
-                    elapsedTime = time_out['elapsed'])
+  ESS <- min(n_iter, coda::effectiveSize(draws_ess)) # not necessary
+  out_df <- data.frame(
+    nEval = sapply(mcmc_out$extras, function(x) {
+      x$nEvaluations
+    }) |>
+      sum(),
+    EffSamp = ESS,
+    userTime = time_out['user.self'],
+    sysTime = time_out['sys.self'],
+    elapsedTime = time_out['elapsed']
+  )
 
-  list(timing = out_df, draws = draws_g, state = mcmc_out$state)
+  list(timing = out_df, draws = draws, state = mcmc_out$state)
 }

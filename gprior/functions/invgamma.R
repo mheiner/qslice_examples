@@ -11,10 +11,15 @@ qinvgamma <- function(p, shape, scale) {
 dinvgamma <- function(x, shape, scale, log = FALSE) {
   sapply(x, \(x) {
     if (log) {
-      if(x <= 0) return(-Inf)
-      out <- dgamma(1.0 / x, shape = shape, rate = scale, log = TRUE) - 2.0*log(x)
+      if (x <= 0) {
+        return(-Inf)
+      }
+      out <- dgamma(1.0 / x, shape = shape, rate = scale, log = TRUE) -
+        2.0 * log(x)
     } else {
-      if(x <= 0) return(0)
+      if (x <= 0) {
+        return(0)
+      }
       out <- dgamma(1.0 / x, shape = shape, rate = scale, log = FALSE) / x^2
     }
     out
@@ -37,10 +42,11 @@ qsqrtinvgamma <- function(p, igsh, igsc) {
 
 dsqrtinvgamma <- function(x, igsh, igsc, log = FALSE) {
   if (log) {
-    out <- dinvgamma(x^2, shape = igsh, scale = igsc, log = TRUE) + log(2.0) + log(x)
+    out <- dinvgamma(x^2, shape = igsh, scale = igsc, log = TRUE) +
+      log(2.0) +
+      log(x)
   } else {
     out <- dinvgamma(x^2, shape = igsh, scale = igsc, log = FALSE) * 2.0 * x
   }
   out
 }
-

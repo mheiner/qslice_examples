@@ -1,222 +1,257 @@
-
 ############## Random Walk ################
 
-random_walk_sampler <- function(n_iter, lf, support, x_0, c) {
-  draws <- numeric(n_iter + 1)
-  draws[1] <- x_0
-  int.x <- x_0
+random_walk_sampler <- function(state, n_iter, lf, support, c) {
+  draws <- numeric(n_iter)
   n.accept <- 0
-  for(i in 2:(n_iter + 1)){
-    ## proposed draw
-    x.dot <- rnorm(1, mean = int.x, sd = c)
-    if (x.dot >= support[1] && x.dot <= support[2]) {
 
-      logr <- lf(x.dot) - lf(int.x)
+  for (i in 1:n_iter) {
+    x_cand <- rnorm(1, mean = state$x, sd = c)
 
-      u <- runif(1, 0, 1)
+    if (x_cand >= support[1] && x_cand <= support[2]) {
+      logr <- lf(x_cand) - lf(state$x)
 
-      if(log(u) < logr){
-        int.x <- x.dot
+      u <- runif(1, min = 0.0, max = 1.0)
+
+      if (log(u) < logr) {
+        state$x <- x_cand
         n.accept <- n.accept + 1
       }
     }
-    draws[i] <- int.x
+
+    draws[i] <- state$x
   }
-  list(draws = draws[-1], counter = 2*n_iter, n.accept = n.accept, n_samp = n_iter)
+
+  list(
+    draws = draws,
+    counter = 2 * n_iter,
+    n.accept = n.accept,
+    n_iter = n_iter,
+    state = state
+  )
 }
 
 
 ############ Stepping Out Eval #############
 
+## stepping out and shrinkage procedure of Neal (2003)
 
-# function to evaluate stepping out procedure
-
-stepping_out_sampler <- function(n_iter, lf, x_0, w, max) {
+stepping_out_sampler <- function(state, n_iter, lf, w, max) {
   counter <- 0
-  draws <- numeric(n_iter + 1)
-  draws[1] <- x_0
+  draws <- numeric(n_iter)
 
-  for ( i in 2:(n_iter + 1)) {
-    out <- slice_stepping_out(x = draws[i-1], log_target = lf, w = w, max = max)
+  for (i in 1:n_iter) {
+    out <- qslice::slice_stepping_out(
+      x = state$x,
+      log_target = lf,
+      w = w,
+      max = max
+    )
+    state$x <- out$x
     draws[i] <- out$x
     counter <- counter + out$nEvaluations
   }
 
-  list(draws = draws[-1], counter = counter, n_samp = n_iter)
+  list(draws = draws, counter = counter, n_iter = n_iter, state = state)
 }
 
 
 ################ GESS ##############
 
-## generalized elliptical slice sampler (Nishihara 2014)
+## generalized elliptical slice sampler (Nishihara, 2014)
 
-gess_sampler <- function(n_iter, lf, x_0, mu, sigma, degf) {
+gess_sampler <- function(state, n_iter, lf, mu, sigma, degf) {
   counter <- 0
-  draws <- numeric(n_iter + 1)
-  draws[1] <- x_0
+  draws <- numeric(n_iter)
 
-  for ( i in 2:(n_iter + 1) ) {
-    out <- slice_genelliptical(x = draws[i-1], log_target = lf,
-                               mu = mu, sigma = sigma, df = degf)
+  for (i in 1:n_iter) {
+    out <- qslice::slice_genelliptical(
+      x = state$x,
+      log_target = lf,
+      mu = mu,
+      sigma = sigma,
+      df = degf
+    )
 
+    state$x <- out$x
     draws[i] <- out$x
     counter <- counter + out$nEvaluations
   }
 
-  list(draws = draws[-1], counter = counter, n_samp = n_iter)
+  list(draws = draws, counter = counter, n_iter = n_iter, state = state)
 }
 
 
 ############ Latent Eval ############
 
-# creating a function to evaluate the latent slice sampler
+# latent slice sampler (Li and Walker, 2023)
 
-latent_sampler <- function(n_iter, lf, x_0, s_0, rate) {
+latent_sampler <- function(state, n_iter, lf, rate) {
   counter <- 0
-  draws <- latents <- numeric(n_iter + 1)
-  draws[1] <- x_0
-  latents[1] <- s_0
+  draws <- latent_s <- numeric(n_iter)
 
-  for ( i in 2:(n_iter + 1) ) {
-    out <- slice_latent(x = draws[i-1], s = latents[i-1],
-                        log_target = lf, rate = rate)
+  for (i in 1:n_iter) {
+    out <- qslice::slice_latent(
+      x = state$x,
+      s = state$s,
+      log_target = lf,
+      rate = rate
+    )
+    state$x <- out$x
+    state$s <- out$s
     draws[i] <- out$x
-    latents[i] <- out$s
+    latent_s[i] <- out$s
     counter <- counter + out$nEvaluations
   }
 
-  list(draws = draws[-1], counter = counter, n_samp = n_iter)
+  list(
+    draws = draws,
+    latent_s = latent_s,
+    counter = counter,
+    n_iter = n_iter,
+    state = state
+  )
 }
-
 
 
 ############## Quantile Slice Eval ################
 
-quantile_sampler <- function(n_iter, lf, x_0, pseudo) {
-
+quantile_sampler <- function(state, n_iter, lf, pseudo) {
   counter <- 0
-  draws <- numeric(n_iter + 1)
-  Tdraws <- numeric(n_iter + 1)
-  draws[1] <- x_0
-  Tdraws[1] <- 0
+  draws <- numeric(n_iter)
+  Udraws <- numeric(n_iter)
 
-  for ( i in 2:(n_iter + 1) ) {
-    out <- slice_quantile(x = draws[i-1],
-                          log_target = lf,
-                          pseudo = pseudo)
+  for (i in 1:n_iter) {
+    out <- qslice::slice_quantile(x = state$x, log_target = lf, pseudo = pseudo)
+    state$x <- out$x
     draws[i] <- out$x
-    Tdraws[i] <- out$u
+    Udraws[i] <- out$u
     counter <- counter + out$nEvaluations
   }
 
-  list(draws = draws[-1], Tdraws = Tdraws[-1], counter = counter, n_samp = n_iter)
+  list(
+    draws = draws,
+    Udraws = Udraws,
+    counter = counter,
+    n_iter = n_iter,
+    state = state
+  )
 }
 
 
 ############## Independence Metropolis Hastings ################
 
-IMH_sampler <- function(n_iter, lf, x_0, pseudo) {
-  draws <- numeric(n_iter + 1)
-  draws[1] <- x_0
+IMH_sampler <- function(state, n_iter, lf, pseudo) {
+  draws <- numeric(n_iter)
   n.accept <- 0
-  for(i in 2:(n_iter + 1)){
-    tmp <- imh_pseudo(x = draws[i-1], log_target = lf, pseudo = pseudo)
+
+  for (i in 1:n_iter) {
+    tmp <- imh_pseudo(x = state$x, log_target = lf, pseudo = pseudo)
+    state$x <- tmp$x
     draws[i] <- tmp$x
     n.accept <- tmp$accpt
   }
-  list(draws = draws[-1], counter = 2*n_iter, n.accept = n.accept, n_samp = n_iter)
-}
 
+  list(
+    draws = draws,
+    counter = 2 * n_iter,
+    n.accept = n.accept,
+    n_iter = n_iter,
+    state = state
+  )
+}
 
 
 ### universal timer
 
 # function to evaluate Random Walk
-sampler_time_eval <- function(type,
-                              n_iter,
-                              lf_func,
-                              support,
-                              x_0,
-                              settings) {
-
+sampler_time_eval <- function(
+  type,
+  state,
+  n_iter,
+  lf_func,
+  support,
+  settings,
+  ess_log
+) {
   if (type == "rw") {
-
-    cc <- settings[1, "c"]
-
     time <- system.time({
-      mcmc_out <- random_walk_sampler(n_iter = n_iter,
-                                      lf = lf_func,
-                                      support = support,
-                                      x_0 = x_0,
-                                      c = cc)
+      mcmc_out <- random_walk_sampler(
+        state = state,
+        n_iter = n_iter,
+        lf = lf_func,
+        support = support,
+        c = settings$tune_param
+      )
     })
-
   } else if (type == "stepping") {
-
-    w <- settings[1, "w"]
-
     time <- system.time({
-      mcmc_out <- stepping_out_sampler(n_iter = n_iter,
-                                       lf = lf_func,
-                                       x_0 = x_0,
-                                       w = w,
-                                       max = Inf)
+      mcmc_out <- stepping_out_sampler(
+        state = state,
+        n_iter = n_iter,
+        lf = lf_func,
+        w = settings$tune_param,
+        max = Inf
+      )
     })
-
   } else if (type == "gess") {
-
-    loc <- settings[1, "loc"]
-    sc <- settings[1, "sc"]
-    degf <- settings[1, "degf"]
-
     time <- system.time({
-      mcmc_out <- gess_sampler(n_iter = n_iter,
-                               lf = lf_func,
-                               x_0 = x_0,
-                               mu = loc,
-                               sigma = sc,
-                               degf = degf)
+      mcmc_out <- gess_sampler(
+        state = state,
+        n_iter = n_iter,
+        lf = lf_func,
+        mu = settings$loc,
+        sigma = settings$sc,
+        degf = settings$degf
+      )
     })
-
   } else if (type == "latent") {
-
-    s_0 <- settings[1, "s_init"]
-    rate <- settings[1, "rate"]
-
     time <- system.time({
-      mcmc_out <- latent_sampler(n_iter = n_iter,
-                                 lf = lf_func,
-                                 x_0 = x_0,
-                                 s_0 = s_0,
-                                 rate = rate)
+      mcmc_out <- latent_sampler(
+        state = state,
+        n_iter = n_iter,
+        lf = lf_func,
+        rate = settings$tune_param
+      )
     })
-
   } else if (type == "Qslice") {
-
     time <- system.time({
-      mcmc_out <- quantile_sampler(n_iter = n_iter,
-                                   lf = lf_func,
-                                   x_0 = x_0,
-                                   pseudo = settings)
+      mcmc_out <- quantile_sampler(
+        state = state,
+        n_iter = n_iter,
+        lf = lf_func,
+        pseudo = settings
+      )
     })
-
   } else if (type == "imh") {
-
     time <- system.time({
-      mcmc_out <- IMH_sampler(n_iter = n_iter,
-                              lf = lf_func,
-                              x_0 = x_0,
-                              pseudo = settings)
+      mcmc_out <- IMH_sampler(
+        state = state,
+        n_iter = n_iter,
+        lf = lf_func,
+        pseudo = settings
+      )
     })
-
   }
 
-  ESS <- min(n_iter, coda::effectiveSize(coda::as.mcmc(mcmc_out$draws)))
-  temp_tbl <- data.frame(nEval = mcmc_out$counter, EffSamp = ESS,
-                         userTime = time['user.self'],
-                         sysTime = time['sys.self'],
-                         elapsedTime = time['elapsed'])
+  if (isTRUE(ess_log)) {
+    draws_ess <- log(mcmc_out$draws)
+  } else {
+    draws_ess <- mcmc_out$draws
+  }
 
-  temp_tbl$Draws <- list(mcmc_out$draws)
-  temp_tbl
+  ESS <- min(n_iter, coda::effectiveSize(coda::as.mcmc(draws_ess))) # not necessary
+
+  out <- list()
+  out$tbl <- data.frame(
+    nEval = mcmc_out$counter,
+    EffSamp = ESS,
+    userTime = time['user.self'],
+    sysTime = time['sys.self'],
+    elapsedTime = time['elapsed']
+  )
+
+  out$draws <- mcmc_out$draws
+  out$state <- mcmc_out$state
+
+  out
 }
