@@ -7,7 +7,6 @@ truth <- list(
   ld = function(x) {
     dgamma(exp(x), gshape, log = TRUE) + x
   },
-  # dld = function(x) {-x},
   p = function(x) {
     pgamma(exp(x), shape = gshape)
   },
@@ -16,5 +15,7 @@ truth <- list(
   },
   lb = -Inf,
   ub = Inf,
-  t = paste("gamma_log(shape = ", gshape, ")")
+  t = paste0("gamma_log(shape = ", gshape, ")")
 )
+
+pseudo_init <- function() c(0.5, 2.0)

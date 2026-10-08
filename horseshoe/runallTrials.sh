@@ -1,6 +1,8 @@
 export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
 
-dte=260521
+dte=260822
 dat="db"
 
 num_of_trials=$(Rscript functions/num_of_trials.R $dat)

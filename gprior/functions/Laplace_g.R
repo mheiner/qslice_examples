@@ -42,7 +42,7 @@ lapxt_g <- function(
   logG = FALSE
 ) {
   tmp <- lapx_g(p = p, psi = psi, Q = Q, a = a, sc_adj = sc_adj, logG = logG)
-  pseudo_list(
+  qslice::pseudo_list(
     family = "t",
     params = list(loc = tmp$loc, sc = tmp$sc, degf = degf),
     lb = lb,

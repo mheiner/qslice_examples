@@ -3,14 +3,16 @@ ii <- as.numeric(args[1]) # job id
 dte <- as.numeric(args[2])
 
 ##### for testing
-# ii <- 5205
-# dte <- 260527
+# ii <- 5
+# dte <- 260928
 #####
 
 source("0_setup.R")
 source("functions/tune.R")
 
+options(qslice.diagnostics = FALSE)
 sessionInfo()
+getOption("qslice.diagnostics")
 
 load(paste0("input/schedule_all_", dte, ".rda"))
 head(sched, n = 14)

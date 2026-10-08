@@ -2,28 +2,25 @@
 
 random_walk_sampler <- function(state, n_iter, lf, support, c) {
   draws <- numeric(n_iter)
-  n.accept <- 0
+  n.accept <- 0L
+  counter <- 0L
 
   for (i in 1:n_iter) {
-    x_cand <- rnorm(1, mean = state$x, sd = c)
-
-    if (x_cand >= support[1] && x_cand <= support[2]) {
-      logr <- lf(x_cand) - lf(state$x)
-
-      u <- runif(1, min = 0.0, max = 1.0)
-
-      if (log(u) < logr) {
-        state$x <- x_cand
-        n.accept <- n.accept + 1
-      }
-    }
-
-    draws[i] <- state$x
+    out <- qslice::rwm_norm(
+      x = state$x,
+      log_target = lf,
+      cand_sd = c,
+      support = support
+    )
+    state$x <- out$x
+    draws[i] <- out$x
+    counter <- counter + out$nEvaluations
+    n.accept <- n.accept + out$accept
   }
 
   list(
     draws = draws,
-    counter = 2 * n_iter,
+    counter = counter,
     n.accept = n.accept,
     n_iter = n_iter,
     state = state
@@ -36,7 +33,7 @@ random_walk_sampler <- function(state, n_iter, lf, support, c) {
 ## stepping out and shrinkage procedure of Neal (2003)
 
 stepping_out_sampler <- function(state, n_iter, lf, w, max) {
-  counter <- 0
+  counter <- 0L
   draws <- numeric(n_iter)
 
   for (i in 1:n_iter) {
@@ -59,8 +56,8 @@ stepping_out_sampler <- function(state, n_iter, lf, w, max) {
 
 ## generalized elliptical slice sampler (Nishihara, 2014)
 
-gess_sampler <- function(state, n_iter, lf, mu, sigma, degf) {
-  counter <- 0
+gess_sampler <- function(state, n_iter, lf, mu, sigma, df) {
+  counter <- 0L
   draws <- numeric(n_iter)
 
   for (i in 1:n_iter) {
@@ -69,7 +66,7 @@ gess_sampler <- function(state, n_iter, lf, mu, sigma, degf) {
       log_target = lf,
       mu = mu,
       sigma = sigma,
-      df = degf
+      df = df
     )
 
     state$x <- out$x
@@ -86,7 +83,7 @@ gess_sampler <- function(state, n_iter, lf, mu, sigma, degf) {
 # latent slice sampler (Li and Walker, 2023)
 
 latent_sampler <- function(state, n_iter, lf, rate) {
-  counter <- 0
+  counter <- 0L
   draws <- latent_s <- numeric(n_iter)
 
   for (i in 1:n_iter) {
@@ -116,7 +113,7 @@ latent_sampler <- function(state, n_iter, lf, rate) {
 ############## Quantile Slice Eval ################
 
 quantile_sampler <- function(state, n_iter, lf, pseudo) {
-  counter <- 0
+  counter <- 0L
   draws <- numeric(n_iter)
   Udraws <- numeric(n_iter)
 
@@ -141,19 +138,21 @@ quantile_sampler <- function(state, n_iter, lf, pseudo) {
 ############## Independence Metropolis Hastings ################
 
 IMH_sampler <- function(state, n_iter, lf, pseudo) {
+  counter <- 0L
   draws <- numeric(n_iter)
-  n.accept <- 0
+  n.accept <- 0L
 
   for (i in 1:n_iter) {
-    tmp <- imh_pseudo(x = state$x, log_target = lf, pseudo = pseudo)
+    tmp <- qslice::imh_pseudo(x = state$x, log_target = lf, pseudo = pseudo)
     state$x <- tmp$x
     draws[i] <- tmp$x
-    n.accept <- tmp$accpt
+    counter <- counter + tmp$nEvaluations
+    n.accept <- n.accept + tmp$accpt
   }
 
   list(
     draws = draws,
-    counter = 2 * n_iter,
+    counter = counter,
     n.accept = n.accept,
     n_iter = n_iter,
     state = state
@@ -201,7 +200,7 @@ sampler_time_eval <- function(
         lf = lf_func,
         mu = settings$loc,
         sigma = settings$sc,
-        degf = settings$degf
+        df = settings$df
       )
     })
   } else if (type == "latent") {
@@ -239,7 +238,7 @@ sampler_time_eval <- function(
     draws_ess <- mcmc_out$draws
   }
 
-  ESS <- min(n_iter, coda::effectiveSize(coda::as.mcmc(draws_ess))) # not necessary
+  ESS <- coda::effectiveSize(coda::as.mcmc(draws_ess))
 
   out <- list()
   out$tbl <- data.frame(

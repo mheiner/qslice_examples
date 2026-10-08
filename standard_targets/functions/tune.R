@@ -26,6 +26,8 @@ tune <- function(
   lxx <- numeric(0)
   lyy <- numeric(0)
 
+  n_run_round <- n_grid * n_rep
+
   for (rr in 1:n_rounds) {
     vals <- seq(bnds_now[1], bnds_now[2], length = n_grid)
 
@@ -38,25 +40,44 @@ tune <- function(
       range_now <- diff(bnds_now)
     }
 
-    for (i in 1:length(vals)) {
-      for (j in 1:n_rep) {
-        settings[["tune_param"]] <- vals[i]
+    rand_sched <- sample.int(
+      n_run_round,
+      size = n_run_round,
+      replace = FALSE
+    )
 
-        ## collect timing info
-        mc_time <- sampler_time_eval(
-          type = type,
-          state = state,
-          n_iter = n_iter,
-          lf_func = log_target,
-          support = support,
-          settings = settings,
-          ess_log = ess_log
-        )
-
-        state <- mc_time$state
-
-        esps[i, j] <- max(mc_time$tbl$EffSamp, 1.0) / mc_time$tbl$userTime
+    for (ii in rand_sched) {
+      j <- floor((ii - 1) / n_grid) + 1 # identifies column
+      i <- ii %% n_grid # identifies row
+      if (i == 0) {
+        i <- n_grid
       }
+
+      settings[["tune_param"]] <- vals[i]
+
+      ## small burn-in from common state
+      mc_burn <- sampler_time_eval(
+        type = type,
+        state = state,
+        n_iter = 100,
+        lf_func = log_target,
+        support = support,
+        settings = settings,
+        ess_log = ess_log
+      )
+
+      ## collect timing info
+      mc_time <- sampler_time_eval(
+        type = type,
+        state = mc_burn$state,
+        n_iter = n_iter,
+        lf_func = log_target,
+        support = support,
+        settings = settings,
+        ess_log = ess_log
+      )
+
+      esps[i, j] <- max(mc_time$tbl$EffSamp, 1.0) / mc_time$tbl$userTime
     }
 
     ## collect running results

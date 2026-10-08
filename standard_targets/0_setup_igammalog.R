@@ -15,5 +15,7 @@ truth <- list(
   },
   lb = -Inf,
   ub = Inf,
-  t = paste("inv-gamma_log(shape = ", gshape, ")")
+  t = paste0("inv-gamma_log(shape = ", gshape, ")")
 )
+
+pseudo_init <- function() c(0.5, 2.0)

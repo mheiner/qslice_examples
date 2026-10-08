@@ -7,7 +7,7 @@ target <- "gammalog"
 target <- "igamma"
 target <- "igammalog"
 
-dte <- 260527
+dte <- 260822
 
 dat <- read.csv(paste0("output/combined_target", target, "_", dte, ".csv"))
 

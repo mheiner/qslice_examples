@@ -4,22 +4,26 @@ ii <- as.numeric(args[2]) # job id
 dte <- as.numeric(args[3])
 
 ##### for testing
-# ii <- 972
-# dte <- 260521
+# ii <- 1
+# dte <- 261006
 # data_use <- "db" # diabetes n = 442
 # data_use <- "db40" # diabetes n = 40
 #####
 
 library("qslice")
 library("coda")
-source("functions/MH_samplers.R")
 source("functions/full_conditionals.R")
 source("functions/mcmc_horseshoe.R")
 source("functions/tune.R")
 
+options(qslice.diagnostics = FALSE)
+
 load(paste0("schedule_all_", data_use, ".rda"))
 source("0_data.R")
 source("0_prior.R")
+
+sessionInfo()
+getOption("qslice.diagnostics")
 
 n_iter <- 30e3
 
@@ -165,7 +169,7 @@ if (type %in% c("rw", "stepping", "latent")) {
     samples = samples_use,
     type = "samples",
     family = "t",
-    degf = c(1, 5),
+    df = c(1, 5),
     lb = ifelse(logscale_tau2, -Inf, 0.0),
     ub = Inf,
     utility_type = util_type,
@@ -177,7 +181,7 @@ if (type %in% c("rw", "stepping", "latent")) {
   sampler_tuned$tau2$pseudo <- tmp_pseu$pseudo
   sampler_tuned$tau2$loc <- tmp_pseu$pseudo$params$loc
   sampler_tuned$tau2$sc <- tmp_pseu$pseudo$params$sc
-  sampler_tuned$tau2$degf <- tmp_pseu$pseudo$params$degf
+  sampler_tuned$tau2$df <- tmp_pseu$pseudo$params$df
   sampler_tuned$tau2$txt <- tmp_pseu$pseudo$txt
 } else if (grepl("samples_reg", subtype)) {
   bqr <- best_quantile_reg(y = log(tau2_samples), X = llam2_samples)
@@ -189,7 +193,7 @@ if (type %in% c("rw", "stepping", "latent")) {
     samples = residuals(bqr$model),
     type = "samples",
     famil = "t",
-    degf = c(1, 5),
+    df = c(1, 5),
     utility_type = "AUC",
     plot = FALSE
   )

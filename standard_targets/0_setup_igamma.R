@@ -22,3 +22,5 @@ truth <- list(
   lb = 0.0,
   ub = Inf
 )
+
+pseudo_init <- function() c(0.5, 2.0)

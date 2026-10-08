@@ -20,6 +20,8 @@ source("functions/invgamma.R")
 
 load("schedule_all.rda")
 
+sessionInfo()
+
 n_iter <- 30e3
 
 run_id <- job_order[ii]

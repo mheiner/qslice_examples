@@ -95,7 +95,7 @@ update_g <- function(state, prior, data, sampler) {
   }
 
   if (sampler$subtype %in% c("Laplace", "Laplace_wide")) {
-    tmp_pseu <- lapprox(
+    tmp_pseu <- qslice::lapprox(
       log_target = ltarget,
       init = g_old,
       family = "cauchy",
@@ -139,7 +139,7 @@ update_g <- function(state, prior, data, sampler) {
     sampler[["sc"]] <- sampler$sc_adj * B / ((A - 1.0) * sqrt(A - 2.0))
     sampler[["degf"]] <- sampler$degf
 
-    tmp_pseu <- pseudo_list(
+    tmp_pseu <- qslice::pseudo_list(
       family = "t",
       params = list(loc = sampler$loc, sc = sampler$sc, degf = sampler$degf),
       lb = support[1],
@@ -167,9 +167,13 @@ update_g <- function(state, prior, data, sampler) {
     )
     tmp$nEvaluations <- 2
   } else if (sampler$type == "stepping") {
-    tmp <- slice_stepping_out(x = g_old, log_target = ltarget, w = sampler$w)
+    tmp <- qslice::slice_stepping_out(
+      x = g_old,
+      log_target = ltarget,
+      w = sampler$w
+    )
   } else if (sampler$type == "gess") {
-    tmp <- slice_genelliptical(
+    tmp <- qslice::slice_genelliptical(
       x = g_old,
       log_target = ltarget,
       mu = sampler$loc,
@@ -177,7 +181,7 @@ update_g <- function(state, prior, data, sampler) {
       df = sampler$degf
     )
   } else if (sampler$type == "latent") {
-    tmp <- slice_latent(
+    tmp <- qslice::slice_latent(
       x = g_old,
       s = state$latent_s,
       log_target = ltarget,
@@ -185,11 +189,15 @@ update_g <- function(state, prior, data, sampler) {
     )
     state$latent_s <- tmp$s
   } else if (sampler$type == "imh") {
-    tmp <- imh_pseudo(x = g_old, log_target = ltarget, pseudo = sampler$pseudo)
+    tmp <- qslice::imh_pseudo(
+      x = g_old,
+      log_target = ltarget,
+      pseudo = sampler$pseudo
+    )
 
     tmp$nEvaluations <- 2
   } else if (sampler$type == "Qslice") {
-    tmp <- slice_quantile(
+    tmp <- qslice::slice_quantile(
       x = g_old,
       log_target = ltarget,
       pseudo = sampler$pseudo

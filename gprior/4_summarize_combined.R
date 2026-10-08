@@ -50,7 +50,7 @@ dat$algoF <- factor(
   )),
   labels = rev(c(
     "Random walk",
-    "Steping out & shrinkage",
+    "Stepping out & shrinkage",
     "Latent slice",
     "Independence M-H: AUC",
     "Independence M-H: Laplace",

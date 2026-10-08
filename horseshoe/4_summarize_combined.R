@@ -4,14 +4,15 @@ library("tidyverse")
 
 # targets <- "all"
 targets <- "db"
-targets <- "db40"
+# targets <- "db40"
 # targets <- c("db40", "db")
 
 # dte <- 260518
 # dte <- 260520 # includes samples_reg
-dte <- 260521 # includes samples_reg with pseudo_opt on residuals
+# dte <- 260521 # includes samples_reg with pseudo_opt on residuals
+dte <- 261006 # with qslice v0.4.0
 
-reference_algo <- "rw"
+reference_algo <- "gess"
 reference_tnx <- "tau2_marg-log" # $ at end means no -log appended
 
 if (length(targets) > 0) {
@@ -128,7 +129,7 @@ dat$algoF <- factor(
   )),
   labels = rev(c(
     "Random walk",
-    "Steping out & shrinkage",
+    "Stepping out & shrinkage",
     "Latent slice",
     "Independence M-H: AUC",
     "Independence M-H: MSW",
@@ -174,7 +175,7 @@ print(eval_tab, n = 30)
 tail(dat, n = 10)
 
 
-dat_plt <- dat %>% filter(n %in% c(40))
+# dat_plt <- dat %>% filter(n %in% c(40))
 dat_plt <- dat %>% filter(n %in% c(442))
 
 ## tuning parameters
@@ -216,7 +217,7 @@ ggplot(
 plt <- ggplot(
   dat_plt %>% filter(grepl("tau2_marg$", target)),
   aes(
-    x = sampPsec / median(sampPsec[which(algo == "stepping")]),
+    x = sampPsec / median(sampPsec[which(algo == "gess")]),
     y = algoF,
     fill = typeF
   ),

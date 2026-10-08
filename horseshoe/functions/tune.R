@@ -26,6 +26,8 @@ tune <- function(
   lxx <- numeric(0)
   lyy <- numeric(0)
 
+  n_run_round <- n_grid * n_rep
+
   for (rr in 1:n_rounds) {
     vals <- seq(bnds_now[1], bnds_now[2], length = n_grid)
 
@@ -38,30 +40,50 @@ tune <- function(
       range_now <- diff(bnds_now)
     }
 
-    for (i in 1:length(vals)) {
-      for (j in 1:n_rep) {
-        if (sampler[[param]]$type == "rw") {
-          sampler[[param]]$c <- vals[i]
-        } else if (sampler[[param]]$type == "stepping") {
-          sampler[[param]]$w <- vals[i]
-        } else if (sampler[[param]]$type == "latent") {
-          sampler[[param]]$rate <- vals[i]
-        }
+    rand_sched <- sample.int(
+      n_run_round,
+      size = n_run_round,
+      replace = FALSE
+    )
 
-        ## collect timing info
-        mc_time <- time_hs(
-          state = state,
-          prior = prior,
-          data = data,
-          sampler = sampler,
-          n_iter = n_iter,
-          param = param,
-          ess_log = ess_log
-        )
-        state <- mc_time$state
-
-        esps[i, j] <- max(mc_time$timing$EffSamp, 1.0) / mc_time$timing$userTime
+    for (ii in rand_sched) {
+      j <- floor((ii - 1) / n_grid) + 1 # identifies column
+      i <- ii %% n_grid # identifies row
+      if (i == 0) {
+        i <- n_grid
       }
+
+      if (sampler[[param]]$type == "rw") {
+        sampler[[param]]$c <- vals[i]
+      } else if (sampler[[param]]$type == "stepping") {
+        sampler[[param]]$w <- vals[i]
+      } else if (sampler[[param]]$type == "latent") {
+        sampler[[param]]$rate <- vals[i]
+      }
+
+      ## small burn-in from common state
+      mc_burn <- time_hs(
+        state = state,
+        prior = prior,
+        data = data,
+        sampler = sampler,
+        n_iter = 100,
+        param = param,
+        ess_log = ess_log
+      )
+
+      ## collect timing info
+      mc_time <- time_hs(
+        state = mc_burn$state,
+        prior = prior,
+        data = data,
+        sampler = sampler,
+        n_iter = n_iter,
+        param = param,
+        ess_log = ess_log
+      )
+
+      esps[i, j] <- max(mc_time$timing$EffSamp, 1.0) / mc_time$timing$userTime
     }
 
     ## collect running results

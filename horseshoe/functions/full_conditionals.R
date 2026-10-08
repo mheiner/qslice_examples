@@ -177,21 +177,20 @@ update_tau2 <- function(state, prior, data, sampler_tau2) {
   }
 
   if (sampler_tau2$type == "rw") {
-    tmp <- random_walk_sampler(
-      lf = ltarget,
-      support = support,
-      x_0 = old_val,
-      c = sampler_tau2$c
+    tmp <- qslice::rwm_norm(
+      x = old_val,
+      log_target = ltarget,
+      cand_sd = sampler_tau2$c,
+      support = support
     )
-    tmp$nEvaluations <- 2
   } else if (sampler_tau2$type == "stepping") {
-    tmp <- slice_stepping_out(
+    tmp <- qslice::slice_stepping_out(
       x = old_val,
       log_target = ltarget,
       w = sampler_tau2$w
     )
   } else if (sampler_tau2$type == "latent") {
-    tmp <- slice_latent(
+    tmp <- qslice::slice_latent(
       x = old_val,
       s = state$latent_s,
       log_target = ltarget,
@@ -204,26 +203,26 @@ update_tau2 <- function(state, prior, data, sampler_tau2) {
       loc_now <- reg_mean(x = llam2_uq, beta = sampler_tau2$bqr$beta) +
         sampler_tau2$pseu_bqr$pseudo$params$loc
 
-      pseudo_now <- pseudo_list(
+      pseudo_now <- qslice::pseudo_list(
         family = "t",
         params = list(
           loc = loc_now,
           sc = sampler_tau2$pseu_bqr$pseudo$params$sc,
-          degf = sampler_tau2$pseu_bqr$pseudo$params$degf
+          df = sampler_tau2$pseu_bqr$pseudo$params$df
         )
       )
 
-      tmp <- imh_pseudo(x = old_val, log_target = ltarget, pseudo = pseudo_now)
-
-      tmp$nEvaluations <- 2
+      tmp <- qslice::imh_pseudo(
+        x = old_val,
+        log_target = ltarget,
+        pseudo = pseudo_now
+      )
     } else if (grepl("samples$", sampler_tau2$subtype)) {
-      tmp <- imh_pseudo(
+      tmp <- qslice::imh_pseudo(
         x = old_val,
         log_target = ltarget,
         pseudo = sampler_tau2$pseudo
       )
-
-      tmp$nEvaluations <- 2
     }
   } else if (sampler_tau2$type == "gess") {
     if (sampler_tau2$subtype == "samples_reg") {
@@ -231,20 +230,20 @@ update_tau2 <- function(state, prior, data, sampler_tau2) {
       loc_now <- reg_mean(x = llam2_uq, beta = sampler_tau2$bqr$beta) +
         sampler_tau2$pseu_bqr$pseudo$params$loc
 
-      tmp <- slice_genelliptical(
+      tmp <- qslice::slice_genelliptical(
         x = old_val,
         log_target = ltarget,
         mu = loc_now,
         sigma = sampler_tau2$pseu_bqr$pseudo$params$sc,
-        df = sampler_tau2$pseu_bqr$pseudo$params$degf
+        df = sampler_tau2$pseu_bqr$pseudo$params$df
       )
     } else if (grepl("samples$", sampler_tau2$subtype)) {
-      tmp <- slice_genelliptical(
+      tmp <- qslice::slice_genelliptical(
         x = old_val,
         log_target = ltarget,
         mu = sampler_tau2$loc,
         sigma = sampler_tau2$sc,
-        df = sampler_tau2$degf
+        df = sampler_tau2$df
       )
     }
   } else if (sampler_tau2$type == "Qslice") {
@@ -253,22 +252,22 @@ update_tau2 <- function(state, prior, data, sampler_tau2) {
       loc_now <- reg_mean(x = llam2_uq, beta = sampler_tau2$bqr$beta) +
         sampler_tau2$pseu_bqr$pseudo$params$loc
 
-      pseudo_now <- pseudo_list(
+      pseudo_now <- qslice::pseudo_list(
         family = "t",
         params = list(
           loc = loc_now,
           sc = sampler_tau2$pseu_bqr$pseudo$params$sc,
-          degf = sampler_tau2$pseu_bqr$pseudo$params$degf
+          df = sampler_tau2$pseu_bqr$pseudo$params$df
         )
       )
 
-      tmp <- slice_quantile(
+      tmp <- qslice::slice_quantile(
         x = old_val,
         log_target = ltarget,
         pseudo = pseudo_now
       )
     } else if (grepl("samples$", sampler_tau2$subtype)) {
-      tmp <- slice_quantile(
+      tmp <- qslice::slice_quantile(
         x = old_val,
         log_target = ltarget,
         pseudo = sampler_tau2$pseudo

@@ -15,6 +15,7 @@ wide_factor <- 4.0 # scale inflation for methods using a "diffuse" pseudo-target
 #########
 
 library("qslice")
+library("tidyverse")
 
 source(paste0("0_setup_", target, ".R"))
 

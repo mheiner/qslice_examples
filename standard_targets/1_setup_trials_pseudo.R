@@ -20,6 +20,7 @@ trials[["Qslice"]][["MSW"]] <- list(
     family = "t",
     lb = truth$lb,
     ub = truth$ub,
+    init_fn = pseudo_init,
     utility_type = "MSW",
     plot = TRUE
   )
@@ -42,6 +43,7 @@ trials[["Qslice"]][["AUC"]] <- list(
     family = "t",
     lb = truth$lb,
     ub = truth$ub,
+    init_fn = pseudo_init,
     utility_type = "AUC",
     plot = TRUE
   )
@@ -58,7 +60,7 @@ trials[["Qslice"]][["AUC_wide"]] <- list(
       params = list(
         loc = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$loc,
         sc = wide_factor * trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$sc,
-        degf = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$degf
+        df = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$df
       ),
       lb = truth$lb,
       ub = truth$ub
@@ -86,8 +88,8 @@ trials[["Qslice"]][["Laplace_Cauchy"]] <- list(
   subtype = "Laplace_Cauchy",
   pseudo = list(
     # for uniformity of structure
-    pseu = lapprox(
-      log_target = truth$d,
+    pseu = qslice::lapprox(
+      log_target = truth$ld,
       init = init_lapprox,
       family = "cauchy",
       sc_adj = 1.0,
@@ -120,7 +122,7 @@ trials[["imh"]][["AUC"]] <- list(
       params = list(
         loc = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$loc,
         sc = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$sc,
-        degf = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$degf
+        df = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$df
       ),
       lb = truth$lb,
       ub = truth$ub
@@ -139,7 +141,7 @@ trials[["imh"]][["AUC_wide"]] <- list(
       params = list(
         loc = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$loc,
         sc = wide_factor * trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$sc,
-        degf = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$degf
+        df = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$df
       ),
       lb = truth$lb,
       ub = truth$ub
@@ -165,7 +167,7 @@ trials[["gess"]][["AUC"]] <- list(
   pseudo = list(
     loc = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$loc,
     sc = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$sc,
-    degf = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$degf
+    df = trials[["Qslice"]][["AUC"]]$pseudo$pseu$params$df
   )
 )
 

@@ -1,12 +1,12 @@
 rm(list = ls())
 library("tidyverse")
 
-set.seed(260521)
+set.seed(261006)
 
-n_reps <- 100
+n_reps <- 50
 
-# data_use <- "db"
-data_use <- "db40"
+data_use <- "db"
+# data_use <- "db40"
 
 targets <- paste(data_use, c("tau2_marg", "tau2_marg-log"), sep = "_")
 

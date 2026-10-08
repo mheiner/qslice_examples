@@ -11,7 +11,6 @@ truth <- list(
     dgamma(x, shape = gshape, scale = 1.0, log = TRUE) +
       ifelse(x > 0.0, 0.0, -Inf)
   },
-  # dld = function(x) {(gshape - 1.0)/x - 1.0},
   p = function(x) {
     pgamma(x, shape = gshape, scale = 1.0)
   },
@@ -25,3 +24,5 @@ truth <- list(
 
 xlim_range <- c(-4, 15)
 ylim_range <- c(0, 0.42)
+
+pseudo_init <- function() c(0.5, 3.0)

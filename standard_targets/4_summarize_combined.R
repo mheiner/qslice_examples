@@ -6,6 +6,11 @@ targets <- "all"
 # targets <- c("gamma", "gammalog", "igamma", "igammalog")
 
 dte <- 260527 # f06 server, 32 jobs in parallel
+dte <- 260813 # f06 server, 32 jobs in parallel
+dte <- 260822 # f06 server, 24 jobs in parallel, error handling
+dte <- 260928 # f07 server, 32 jobs in parallel, diagnostic mode off
+dte <- 261006 # f06 server, 32 jobs parallel, diagnostic mode off
+
 
 if (length(targets) == 1 && targets == "all") {
   dat <- read.csv(paste0("output/combined_all_", dte, ".csv"))
@@ -95,7 +100,7 @@ dat$algoF <- factor(
     "Random walk",
     "Independence M-H: AUC",
     "Independence M-H: AUC-diffuse",
-    "Steping out & shrinkage (Neal, 2003)",
+    "Stepping out & shrinkage (Neal, 2003)",
     "Generalized elliptical (Nishihara et al., 2014)",
     "Latent slice (Li and Walker, 2023)",
     "Quantile slice: MSW",
@@ -180,6 +185,28 @@ plt <- ggplot(
   xlab("Effective samples (in thousands) per iteration") +
   ylab("") +
   labs(color = "", fill = "") +
+  facet_wrap(~target_base, scales = "free_x")
+
+plt
+
+ggsave(
+  plot = plt,
+  width = 9,
+  height = 5.5,
+  filename = paste0("plots/ESpIt_primary_", dte, ".pdf")
+)
+
+
+plt <- ggplot(
+  dat %>% filter(target %in% c("normal", "gamma", "igamma")),
+  aes(x = sampPsec / 1e3, y = algoF, color = ii)
+) +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position = "none") +
+  scale_alpha(guide = "none") +
+  xlab("Effective samples (in thousands) per second") +
+  ylab("") +
   facet_wrap(~target_base, scales = "free_x")
 
 plt
@@ -279,7 +306,7 @@ dat_q$sc <- as.numeric(sub(
 dat_q$df <- NA
 dat_q$df[which(dat_q$fam == "C")] <- 1
 dat_q$df[which(dat_q$fam == "t")] <- as.numeric(sub(
-  ".*degf = ([-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?).*",
+  ".*df = ([-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?).*",
   "\\1",
   dat_q$algo_descrip[which(dat_q$fam == "t")]
 ))
@@ -313,7 +340,7 @@ for (i in 1:nrow(dat_q_unique)) {
     params = list(
       loc = dat_q_unique[i, "loc"],
       sc = dat_q_unique[i, "sc"],
-      degf = dat_q_unique[i, "df"]
+      df = dat_q_unique[i, "df"]
     ),
     lb = dat_q_unique[i, "lb"],
     ub = Inf
@@ -362,7 +389,7 @@ p_auc <- ggplot(
   geom_jitter(width = 0.01, height = 0, size = 0.6) +
   theme_bw() +
   ylab("ES/sec (thousands)") +
-  xlim(0, 1)
+  xlim(-0.01, 1.01)
 
 # ggsave(filename = paste0("plots/ESpSvAUC_", dte, ".pdf"), width = 5, height = 4)
 
@@ -373,7 +400,7 @@ p_msw <- ggplot(
   geom_jitter(width = 0.01, height = 0, size = 0.6) +
   theme_bw() +
   ylab("ES/sec (thousands)") +
-  xlim(0, 1) +
+  xlim(-0.01, 1.01) +
   guides(
     color = guide_legend(override.aes = list(size = 3)),
     shape = guide_legend(override.aes = list(size = 3))
@@ -418,8 +445,8 @@ p_aucmsw <- ggplot(
 ) +
   geom_jitter(width = 0.01, height = 0.01, size = 0.6) +
   theme_bw() +
-  xlim(0, 1) +
-  ylim(0, 1) +
+  xlim(-0.01, 1.01) +
+  ylim(-0.01, 1.01) +
   geom_abline(intercept = 0, slope = 1, color = "gray", linetype = "dashed")
 
 

@@ -119,7 +119,7 @@ time_hs <- function(
     draws_ess <- draws |> coda::as.mcmc()
   }
 
-  ESS <- min(n_iter, coda::effectiveSize(draws_ess)) # not necessary
+  ESS <- coda::effectiveSize(draws_ess)
   out_df <- data.frame(
     nEval = sapply(mcmc_out$extras, function(x) {
       x$nEvaluations
