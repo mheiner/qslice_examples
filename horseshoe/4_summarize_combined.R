@@ -12,7 +12,7 @@ targets <- "db"
 # dte <- 260521 # includes samples_reg with pseudo_opt on residuals
 dte <- 261006 # with qslice v0.4.0
 
-reference_algo <- "gess"
+reference_algo <- "rw"
 reference_tnx <- "tau2_marg-log" # $ at end means no -log appended
 
 if (length(targets) > 0) {

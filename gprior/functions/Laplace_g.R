@@ -36,7 +36,7 @@ lapxt_g <- function(
   Q,
   a,
   sc_adj = 1.0,
-  degf = 1.0,
+  df = 1.0,
   lb = -Inf,
   ub = Inf,
   logG = FALSE
@@ -44,7 +44,7 @@ lapxt_g <- function(
   tmp <- lapx_g(p = p, psi = psi, Q = Q, a = a, sc_adj = sc_adj, logG = logG)
   qslice::pseudo_list(
     family = "t",
-    params = list(loc = tmp$loc, sc = tmp$sc, degf = degf),
+    params = list(loc = tmp$loc, sc = tmp$sc, df = df),
     lb = lb,
     ub = ub,
     name = 'Laplace'

@@ -2,7 +2,7 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 
-dte=260525
+dte=261008
 
 num_of_trials=$(Rscript functions/num_of_trials.R)
 echo $num_of_trials

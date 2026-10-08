@@ -107,7 +107,7 @@ update_g <- function(state, prior, data, sampler) {
 
     sampler[["loc"]] <- tmp_pseu$params$loc
     sampler[["sc"]] <- tmp_pseu$params$sc
-    sampler[["degf"]] <- 1
+    sampler[["df"]] <- 1
 
     sampler[["pseudo"]] <- tmp_pseu
   } else if (
@@ -119,7 +119,7 @@ update_g <- function(state, prior, data, sampler) {
       Q = qq1,
       a = prior$a_g,
       sc_adj = sampler$sc_adj,
-      degf = sampler$degf,
+      df = sampler$df,
       lb = support[1],
       ub = support[2],
       logG = sampler$logG
@@ -137,11 +137,11 @@ update_g <- function(state, prior, data, sampler) {
 
     sampler[["loc"]] <- B / (A + 1.0) # IG mode
     sampler[["sc"]] <- sampler$sc_adj * B / ((A - 1.0) * sqrt(A - 2.0))
-    sampler[["degf"]] <- sampler$degf
+    sampler[["df"]] <- sampler$df
 
     tmp_pseu <- qslice::pseudo_list(
       family = "t",
-      params = list(loc = sampler$loc, sc = sampler$sc, degf = sampler$degf),
+      params = list(loc = sampler$loc, sc = sampler$sc, df = sampler$df),
       lb = support[1],
       ub = support[2]
     )
@@ -159,13 +159,12 @@ update_g <- function(state, prior, data, sampler) {
     u <- runif(1, min = 0.0, max = u_max)
     tmp <- list(x = qinvgamma(u, shape = a1, scale = b1), nEvaluations = 0)
   } else if (sampler$type == "rw") {
-    tmp <- random_walk_sampler(
-      lf = ltarget,
-      support = support,
-      x_0 = g_old,
-      sampler$c
+    tmp <- qslice::rwm_norm(
+      x = g_old,
+      log_target = ltarget,
+      cand_sd = sampler$c,
+      support = support
     )
-    tmp$nEvaluations <- 2
   } else if (sampler$type == "stepping") {
     tmp <- qslice::slice_stepping_out(
       x = g_old,
@@ -178,7 +177,7 @@ update_g <- function(state, prior, data, sampler) {
       log_target = ltarget,
       mu = sampler$loc,
       sigma = sampler$sc,
-      df = sampler$degf
+      df = sampler$df
     )
   } else if (sampler$type == "latent") {
     tmp <- qslice::slice_latent(

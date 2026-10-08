@@ -249,7 +249,11 @@ if (type == "Qslice") {
 
   draws_u <- sapply(mc_out$extras, function(x) x$u)
   (IAT_u <- unname(n_iter_qs / effectiveSize(draws_u)))
-  (AUC <- auc(u = draws_u))
+  (AUC <- utility_shrinkslice(
+    u = draws_u,
+    type = "samples",
+    utility_type = "AUC"
+  ))
 } else {
   IAT_u <- NA
   AUC <- NA

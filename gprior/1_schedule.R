@@ -1,9 +1,9 @@
 rm(list = ls())
 library("tidyverse")
 
-set.seed(260525)
+set.seed(261008)
 
-n_reps <- 100
+n_reps <- 50
 
 targets <- c("hyper-g", "hyper-g-log")
 

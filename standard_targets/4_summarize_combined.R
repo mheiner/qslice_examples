@@ -10,6 +10,7 @@ dte <- 260813 # f06 server, 32 jobs in parallel
 dte <- 260822 # f06 server, 24 jobs in parallel, error handling
 dte <- 260928 # f07 server, 32 jobs in parallel, diagnostic mode off
 dte <- 261006 # f06 server, 32 jobs parallel, diagnostic mode off
+dte <- 261008 # f04 server, 32 jobs parallel, diagnostic mode off; multiple psuedo_opt tries
 
 
 if (length(targets) == 1 && targets == "all") {
@@ -251,7 +252,7 @@ ggplot(
   aes(x = loc, y = sc)
 ) +
   geom_point()
-## it appears the MSW optimized to an unnecessarily large scale parameter
+
 
 plt <- ggplot(
   dat %>% filter(target %in% c("gamma", "igamma", "gammalog", "igammalog")),

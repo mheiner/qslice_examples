@@ -3,15 +3,14 @@ ii <- as.numeric(args[1]) # job id
 dte <- as.numeric(args[2])
 
 ##### for testing
-# ii <- 1964
-# dte <- 240520
+# ii <- 3
+# dte <- 241008
 #####
 
 library("qslice")
 library("coda")
 source("0_data.R")
 source("0_prior.R")
-source("functions/MH_samplers.R")
 source("functions/full_conditionals.R")
 source("functions/mcmc_gprior.R")
 source("functions/tune.R")
@@ -156,7 +155,7 @@ if (type %in% c("rw", "stepping", "latent")) {
     samples = samples_use,
     type = "samples",
     family = "t",
-    degf = c(1, 5),
+    df = c(1, 5),
     lb = ifelse(logG, -Inf, 0.0),
     ub = ifelse(logG, log(prior$g_max), prior$g_max),
     utility_type = "AUC",
@@ -168,14 +167,14 @@ if (type %in% c("rw", "stepping", "latent")) {
   sampler_tuned$g$pseudo <- tmp_pseu$pseudo
   sampler_tuned$g$loc <- tmp_pseu$pseudo$params$loc
   sampler_tuned$g$sc <- tmp_pseu$pseudo$params$sc
-  sampler_tuned$g$degf <- tmp_pseu$pseudo$params$degf
+  sampler_tuned$g$df <- tmp_pseu$pseudo$params$df
   sampler_tuned$g$txt <- tmp_pseu$pseudo$txt
 } else if (grepl("Laplace_analytic", subtype)) {
   sampler_tuned$g$type <- type
   sampler_tuned$g$subtype <- subtype
 
   if (isTRUE(logG)) {
-    sampler_tuned$g$degf <- 5
+    sampler_tuned$g$df <- 5
 
     if (grepl("wide", subtype)) {
       sampler_tuned$g$sc_adj <- 1.2
@@ -183,7 +182,7 @@ if (type %in% c("rw", "stepping", "latent")) {
       sampler_tuned$g$sc_adj <- 1.0
     }
   } else {
-    sampler_tuned$g$degf <- 1
+    sampler_tuned$g$df <- 1
 
     if (grepl("wide", subtype)) {
       sampler_tuned$g$sc_adj <- 1.5
@@ -245,7 +244,11 @@ if (type == "Qslice") {
   ) # samples for pseudo-target
 
   draws_u <- sapply(mc_out$extras, function(x) x$u)
-  (AUC <- auc(u = draws_u))
+  (AUC <- utility_shrinkslice(
+    u = draws_u,
+    type = "samples",
+    utility_type = "AUC"
+  ))
 } else {
   AUC <- NA
 }
