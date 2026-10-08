@@ -48,7 +48,7 @@ if (isTRUE(run_info$subtype == "MSW_samples")) {
         ) {
           message(sprintf(
             "Attempt %d failed with message: %s. Retrying...",
-            attempts,
+            ps_attempts,
             e$message
           ))
           NULL
@@ -88,7 +88,7 @@ if (isTRUE(run_info$subtype == "MSW_samples")) {
         ) {
           message(sprintf(
             "Attempt %d failed with message: %s. Retrying...",
-            attempts,
+            ps_attempts,
             e$message
           ))
           NULL
