@@ -1,37 +1,48 @@
-qtruncbeta <- function(p, shape1, shape2, lower, upper) {
-  p_lower <- pbeta(lower, shape1 = shape1, shape2 = shape2)
-  p_upper <- pbeta(upper, shape1 = shape1, shape2 = shape2)
-  prob_interval <- p_upper - p_lower
-  p_out <- p * prob_interval + p_lower
-  q_out <- qbeta(p_out, shape1 = shape1, shape2 = shape2)
-  list(q = q_out, prob_interval = prob_interval)
+.decseq_upper <- function(v_previous) {
+  # min(v / (1 - v), 1), avoiding overflow and unnecessary division.
+  if (v_previous >= 0.5) 1.0 else v_previous / (1.0 - v_previous)
 }
 
 V_decseq_from_U <- function(u_vec, shape1_vec, shape2_vec) {
   Km1 <- length(u_vec)
-  K <- Km1 + 1
-  lower <- numeric(Km1)
+  K <- Km1 + 1L
+
+  stopifnot(
+    Km1 >= 1L,
+    length(shape1_vec) == Km1,
+    length(shape2_vec) == Km1,
+    all(is.finite(shape1_vec)),
+    all(is.finite(shape2_vec)),
+    all(shape1_vec > 0.0),
+    all(shape2_vec > 0.0),
+    all(!is.na(u_vec)),
+    all(u_vec >= 0.0),
+    all(u_vec <= 1.0)
+  )
+
+  lower <- 1.0 / (K - seq_len(Km1) + 1.0)
   upper <- numeric(Km1)
   vv <- numeric(Km1)
-  lvv <- numeric(Km1)
-  prob_interval <- numeric(Km1)
+  log_prob_interval <- numeric(Km1)
 
-  lower[1] <- 1.0 / K
   upper[1] <- 1.0
+  for (k in seq_len(Km1)) {
+    if (k > 1L) {
+      upper[k] <- .decseq_upper(vv[k - 1L])
+    }
+    if (lower[k] >= upper[k]) {
+      stop(
+        "Empty decreasing-stick interval at component ",
+        k,
+        ": lower = ",
+        lower[k],
+        ", upper = ",
+        upper[k],
+        ".",
+        call. = FALSE
+      )
+    }
 
-  p_lower1 <- pbeta(lower[1], shape1 = shape1_vec[1], shape2 = shape2_vec[1])
-  prob_interval[1] <- 1.0 - p_lower1
-
-  vv[1] <- qbeta(
-    u_vec[1] * prob_interval[1] + p_lower1,
-    shape1 = shape1_vec[1],
-    shape2 = shape2_vec[1]
-  )
-  lvv[1] <- log(vv[1])
-
-  for (k in 2:Km1) {
-    lower[k] <- 1.0 / (K - k + 1)
-    upper[k] <- exp(lvv[k - 1] - log1m_exp(lvv[k - 1]))
     tmp <- qtruncbeta(
       p = u_vec[k],
       shape1 = shape1_vec[k],
@@ -40,51 +51,78 @@ V_decseq_from_U <- function(u_vec, shape1_vec, shape2_vec) {
       upper = upper[k]
     )
     vv[k] <- tmp$q
-    lvv[k] <- log(tmp$q)
-    prob_interval[k] <- tmp$prob_interval
-  }
-
-  if (any(is.nan(vv)) | any(is.na(vv))) {
-    warning(paste0(
-      "Decreasing V sequence returning Na or NaN\n",
-      "V = ",
-      paste(vv, collapse = " "),
-      "\n"
-    ))
-  }
-
-  if (any(is.nan(log(prob_interval))) | any(is.na(prob_interval))) {
-    warning(paste0(
-      "Na or NaN in probability intervals for truncated betas.\n",
-      "V = ",
-      paste(vv, collapse = " "),
-      "\n"
-    ))
+    log_prob_interval[k] <- tmp$log_prob_interval
   }
 
   list(
     v = vv,
-    lv = lvv,
+    lv = log(vv),
     lower = lower,
     upper = upper,
-    prob_intervals = prob_interval
+    # Kept only for compatibility/printing. It may contain exact zeros from
+    # underflow even when log_prob_intervals is finite.
+    prob_intervals = exp(log_prob_interval),
+    log_prob_intervals = log_prob_interval
   )
 }
 
 U_from_Vdecseq <- function(v_vec, shape1_vec, shape2_vec) {
   Km1 <- length(v_vec)
-  K <- Km1 + 1
-  lower <- 1.0 / (K - 1:Km1 + 1)
-  upper <- c(1.0, v_vec[-Km1] / (1.0 - v_vec[-Km1]))
-  prob_interval <- pbeta(upper, shape1 = shape1_vec, shape2 = shape2_vec) -
-    pbeta(lower, shape1 = shape1_vec, shape2 = shape2_vec)
+  K <- Km1 + 1L
 
-  p0 <- pbeta(v_vec, shape1 = shape1_vec, shape2 = shape2_vec)
-  p_lower <- pbeta(lower, shape1 = shape1_vec, shape2 = shape2_vec)
+  stopifnot(
+    Km1 >= 1L,
+    length(shape1_vec) == Km1,
+    length(shape2_vec) == Km1,
+    all(is.finite(shape1_vec)),
+    all(is.finite(shape2_vec)),
+    all(shape1_vec > 0.0),
+    all(shape2_vec > 0.0),
+    all(is.finite(v_vec))
+  )
 
-  u <- (p0 - p_lower) / prob_interval
+  lower <- 1.0 / (K - seq_len(Km1) + 1.0)
+  upper <- c(
+    1.0,
+    vapply(v_vec[-Km1], .decseq_upper, numeric(1))
+  )
+  u <- numeric(Km1)
+  log_prob_interval <- numeric(Km1)
 
-  list(u = u, lower = lower, upper = upper, prob_intervals = prob_interval)
+  for (k in seq_len(Km1)) {
+    if (v_vec[k] <= lower[k] || v_vec[k] >= upper[k]) {
+      stop(
+        "Stick component ",
+        k,
+        " is outside its open conditional support: v = ",
+        v_vec[k],
+        ", interval = (",
+        lower[k],
+        ", ",
+        upper[k],
+        ").",
+        call. = FALSE
+      )
+    }
+
+    tmp <- ptruncbeta(
+      q = v_vec[k],
+      shape1 = shape1_vec[k],
+      shape2 = shape2_vec[k],
+      lower = lower[k],
+      upper = upper[k]
+    )
+    u[k] <- tmp$p
+    log_prob_interval[k] <- tmp$log_prob_interval
+  }
+
+  list(
+    u = u,
+    lower = lower,
+    upper = upper,
+    prob_intervals = exp(log_prob_interval),
+    log_prob_intervals = log_prob_interval
+  )
 }
 
 
@@ -245,7 +283,7 @@ slice_quantile_stick <- function(
       VfromU <- V_decseq_from_U(
         u_vec = u,
         shape1_vec = pseudo$shape1,
-        shape2 = pseudo$shape2
+        shape2_vec = pseudo$shape2
       )
 
       vv <- VfromU$v
@@ -281,13 +319,13 @@ slice_quantile_stick <- function(
         # ljacob <- sum(ltheta) - sum(lvv)
         # lt <- lt0 + ljacob
         #
-        # ldens_pseudo <- sum((pseudo$shape1 - 1.0)*lvv) + sum((pseudo$shape2 - 1.0)*l1mv) - sum(log(VfromU$prob_intervals[-1]))
+        # ldens_pseudo <- sum((pseudo$shape1 - 1.0)*lvv) + sum((pseudo$shape2 - 1.0)*l1mv) - sum(VfromU$log_prob_intervals[-1])
         # out <- lt - ldens_pseudo
 
         ## tricky incorporation of Jacobian theta to V
         ldens_pseudo <- sum((pseudo$shape1 - 1.0) * lvv) +
           sum((pseudo$shape2 - Km1:1) * l1mv) -
-          sum(log(VfromU$prob_intervals[-1])) # includes Jacobian
+          sum(VfromU$log_prob_intervals[-1]) # includes Jacobian
         out <- lt0 - ldens_pseudo # dividing by this pseudo puts Jacobian to numerator
       }
 

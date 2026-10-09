@@ -82,7 +82,7 @@ imh_decbetaU <- function(
     tnx <- V_decseq_from_U(
       u_vec = u,
       shape1_vec = pseudo$shape1,
-      shape2 = pseudo$shape2
+      shape2_vec = pseudo$shape2
     )
     v <- tnx$v
     lv <- tnx$lv
@@ -110,14 +110,14 @@ imh_decbetaU <- function(
   ## tricky incorporation of Jacobian to theta
   ldens_pseudo <- sum((pseudo$shape1 - 1.0) * lv) +
     sum((pseudo$shape2 - Km1:1) * l1mv) -
-    sum(log(tnx$prob_intervals[-1])) # includes Jacobian v to theta and prob_intervals of proposal
+    sum(tnx$log_prob_intervals[-1]) # includes Jacobian v to theta and prob_intervals of proposal
   lfx_old <- lt0 - ldens_pseudo # dividing by this pseudo puts Jacobian to numerator
 
   u_cand <- runif(Km1, min = 0.0, max = 1.0)
   VfromU_cand <- V_decseq_from_U(
     u_vec = u_cand,
     shape1_vec = pseudo$shape1,
-    shape2 = pseudo$shape2
+    shape2_vec = pseudo$shape2
   )
 
   v_cand <- VfromU_cand$v
@@ -149,7 +149,7 @@ imh_decbetaU <- function(
     nEvaluations <- nEvaluations + 1L
     ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lv_cand) +
       sum((pseudo$shape2 - Km1:1) * l1mv_cand) -
-      sum(log(VfromU_cand$prob_intervals[-1])) # includes Jacobian
+      sum(VfromU_cand$log_prob_intervals[-1]) # includes Jacobian
     lfx_cand <- lt0_cand - ldens_pseudo_cand
   }
 

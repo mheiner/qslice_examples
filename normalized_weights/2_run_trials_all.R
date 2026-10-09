@@ -10,6 +10,7 @@ dte <- as.numeric(args[2])
 library("coda")
 
 source("functions/functions.R")
+source("functions/functions_truncbeta.R")
 source("functions/functions_QSS.R")
 source("functions/functions_QSS_logit.R")
 source("functions/functions_IMH.R")
