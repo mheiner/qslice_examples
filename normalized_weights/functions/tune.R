@@ -27,6 +27,8 @@ tune <- function(
   lxx <- numeric(0)
   lyy <- numeric(0)
 
+  n_run_round <- n_grid * n_rep
+
   for (rr in 1:n_rounds) {
     vals <- seq(bnds_now[1], bnds_now[2], length = n_grid)
 
@@ -39,30 +41,54 @@ tune <- function(
       range_now <- diff(bnds_now)
     }
 
-    for (i in 1:length(vals)) {
-      for (j in 1:n_rep) {
-        settings[[param_name]] <- vals[i]
+    rand_sched <- sample.int(
+      n_run_round,
+      size = n_run_round,
+      replace = FALSE
+    )
 
-        ## collect timing info
-        mc <- mcmc_sample(
-          n_iter = n_iter,
-          n_thin = 1,
-          state = state,
-          sampler = sampler,
-          log_target_theta = NULL,
-          log_target_logits = log_target,
-          pseudo = pseudo,
-          target_type = target_type,
-          tuning_params = settings,
-          verbose = FALSE
-        )
-
-        state <- mc$mc$state
-
-        ESSZ <- coda::effectiveSize(mc$mc$simsZ)
-
-        esps[i, j] <- max(mean(ESSZ), 1.0) / mc$time["user.self"]
+    for (ii in rand_sched) {
+      j <- floor((ii - 1) / n_grid) + 1 # identifies column
+      i <- ii %% n_grid # identifies row
+      if (i == 0) {
+        i <- n_grid
       }
+
+      settings[[param_name]] <- vals[i]
+
+      ## small burn-in from common state
+      mc_burn <- mcmc_sample(
+        n_iter = 100,
+        n_thin = 1,
+        state = state,
+        sampler = sampler,
+        log_target_theta = NULL,
+        log_target_logits = log_target,
+        pseudo = pseudo,
+        target_type = target_type,
+        tuning_params = settings,
+        verbose = FALSE
+      )
+
+      ## collect timing info
+      mc <- mcmc_sample(
+        n_iter = n_iter,
+        n_thin = 1,
+        state = mc_burn$mc$state,
+        sampler = sampler,
+        log_target_theta = NULL,
+        log_target_logits = log_target,
+        pseudo = pseudo,
+        target_type = target_type,
+        tuning_params = settings,
+        verbose = FALSE
+      )
+
+      state <- mc$mc$state
+
+      ESSZ <- coda::effectiveSize(mc$mc$simsZ)
+
+      esps[i, j] <- max(mean(ESSZ), 1.0) / mc$time["user.self"]
     }
 
     ## collect running results

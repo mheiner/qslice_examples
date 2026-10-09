@@ -5,7 +5,7 @@ slice_hyperrect_indep_t <- function(
   k <- length(u)
 
   lhu <- log_target_u(u)$value
-  nEvaluations <- 1
+  nEvaluations <- 1L
 
   if (is.infinite(lhu) | is.nan(lhu) | is.na(lhu)) {
     stop(paste0(
@@ -28,7 +28,7 @@ slice_hyperrect_indep_t <- function(
 
     tmp1 <- log_target_u(u1)
     lhu1 <- tmp1$value
-    nEvaluations <- nEvaluations + 1
+    nEvaluations <- nEvaluations + 1L
 
     if (is.nan(lhu1) | is.na(lhu1)) {
       stop(paste0(
@@ -115,20 +115,19 @@ slice_hyperrect_logits <- function(
   stopifnot(length(mu) == k)
   stopifnot(dim(Sig) == c(k, k))
 
-  a <- 0.5 * (df + k)
-  b <- 0.5 * (df + sum(z^2))
+  a <- 0.5 * (df + 1.0)
 
   lff <- function(uu) {
     zz <- qt(uu, df = df)
     xx <- drop(SigL %*% zz + mu)
-    ssz <- sum(zz^2)
+    zzsq <- zz^2
 
     if (type == "unordered") {
-      out <- log_target_logits(xx) + a * log1p(ssz / df)
+      out <- log_target_logits(xx) + a * sum(log1p(zzsq / df))
     } else if (type == "decreasing") {
       if (all(diff(xx) < 0.0) & all(xx > 0.0)) {
         # xx refers to logits here
-        out <- log_target_logits(xx) + a * log1p(ssz / df)
+        out <- log_target_logits(xx) + a * sum(log1p(zzsq / df))
       } else {
         out <- -Inf
       }

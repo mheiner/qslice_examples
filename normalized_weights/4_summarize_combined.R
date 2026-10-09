@@ -2,6 +2,8 @@ rm(list = ls())
 library("tidyverse")
 
 dte <- 260704 # f06; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
+dte <- 261009 #
+
 
 # load(paste0("input/schedule_all_", dte, ".rda"))
 dat0 <- read.csv(paste0("output/combined_all_", dte, ".csv"))

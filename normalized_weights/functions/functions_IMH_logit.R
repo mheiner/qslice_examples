@@ -32,19 +32,22 @@ imh_logits <- function(
   stopifnot(length(mu) == k)
   stopifnot(dim(Sig) == c(k, k))
 
-  a <- 0.5 * (df + k)
-  b <- 0.5 * (df + sum(z^2))
+  a <- 0.5 * (df + 1.0)
+
+  nEvaluations <- 0L
 
   lff <- function(zz) {
     xx <- drop(SigL %*% zz + mu)
-    ssz <- sum(zz^2)
+    zzsq <- zz^2
 
     if (type == "unordered") {
-      out <- log_target_logits(xx) + a * log1p(ssz / df)
+      out <- log_target_logits(xx) + a * sum(log1p(zzsq / df))
+      nEvaluations <<- nEvaluations + 1L
     } else if (type == "decreasing") {
       if (all(diff(xx) < 0.0) & all(xx > 0.0)) {
         # xx refers to logits here
-        out <- log_target_logits(xx) + a * log1p(ssz / df)
+        out <- log_target_logits(xx) + a * sum(log1p(zzsq / df))
+        nEvaluations <<- nEvaluations + 1L
       } else {
         out <- -Inf
       }
@@ -66,6 +69,8 @@ imh_logits <- function(
   } else {
     out <- lrat_old
   }
+
+  out$nEvaluations <- nEvaluations
 
   out
 }
@@ -97,7 +102,7 @@ mcmc_imh_logit <- function(
   sims_logits <- matrix(NA, ncol = Km1, nrow = n_iter)
   colnames(sims_logits) <- paste0("logit", 1:Km1)
 
-  neval <- rep(2, n_iter)
+  neval <- numeric(n_iter)
 
   if (isTRUE(verbose)) {
     pb <- utils::txtProgressBar(min = 0, max = n_iter, style = 3)
@@ -125,6 +130,7 @@ mcmc_imh_logit <- function(
 
     simsZ[i, ] <- z_now
     sims_logits[i, ] <- state$logits
+    neval[i] <- tmp$nEvaluations
 
     if (isTRUE(verbose)) {
       utils::setTxtProgressBar(pb, i)

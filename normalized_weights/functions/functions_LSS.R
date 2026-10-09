@@ -30,7 +30,7 @@ slice_latent_logit <- function(
   }
 
   lfx <- log_target_use(logits)
-  nEvaluations <- 1
+  nEvaluations <- 1L
 
   if (is.nan(lfx) | is.infinite(lfx) | is.na(lfx)) {
     stop(paste0(
@@ -58,7 +58,7 @@ slice_latent_logit <- function(
     logits1 <- drop(SigL %*% z1 + mu)
 
     lfx1 <- log_target_use(logits1)
-    nEvaluations <- nEvaluations + 1
+    nEvaluations <- nEvaluations + 1L
 
     if (is.nan(lfx1) | is.na(lfx1)) {
       warning(paste0(

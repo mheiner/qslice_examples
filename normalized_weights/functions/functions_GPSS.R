@@ -16,6 +16,13 @@ geodesic_shrinkage <- function(
   mu
 ) {
   ## Implemented from Schar et al, 2023
+
+  nEvaluations <- 0L
+  ltarg <- function(z) {
+    nEvaluations <<- nEvaluations + 1L
+    log_target(z)
+  }
+
   twopi <- 2.0 * pi
   y <- runif_equator(theta_now)
   omega_max <- runif(1, min = 0.0, max = twopi)
@@ -29,7 +36,7 @@ geodesic_shrinkage <- function(
     theta_out <- theta_now * cos(omega_now) + y * sin(omega_now)
     z_out <- drop(r_now * theta_out)
     x_out <- drop((SigL %*% z_out) + mu)
-    if (log_target(x_out) > log_thresh) {
+    if (ltarg(x_out) > log_thresh) {
       accpt <- TRUE
     } else {
       # shrink
@@ -41,7 +48,7 @@ geodesic_shrinkage <- function(
       iter <- iter + 1
     }
   }
-  list(x = theta_out, nEvaluations = iter)
+  list(x = theta_out, nEvaluations = nEvaluations)
 }
 
 stepsrhink_rz <- function(
@@ -57,9 +64,9 @@ stepsrhink_rz <- function(
   ## Based on Schar et al 2023
   ## log_target here will refer only to g(x(z)) while z(r, theta) = r*theta
 
-  n_eval_now <- 0
+  n_eval_now <- 0L
   ltarg <- function(x) {
-    n_eval_now <<- n_eval_now + 1 # so we can count while stepping out
+    n_eval_now <<- n_eval_now + 1L # so we can count while stepping out
     log_target(x)
   }
 

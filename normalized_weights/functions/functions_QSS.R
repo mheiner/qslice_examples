@@ -95,7 +95,7 @@ slice_hyperrect_stick <- function(
   k <- length(u)
 
   lhu <- log_target_u(u)$lhu
-  nEvaluations <- 1
+  nEvaluations <- 1L
 
   if (is.infinite(lhu) | is.nan(lhu) | is.na(lhu)) {
     stop(paste0(
@@ -117,7 +117,7 @@ slice_hyperrect_stick <- function(
     u1 <- L + runif(k, min = 0.0, max = 1.0) * (R - L)
     tmp1 <- log_target_u(u1)
     lhu1 <- tmp1$lhu
-    nEvaluations <- nEvaluations + 1
+    nEvaluations <- nEvaluations + 1L
 
     if (is.nan(lhu1) | is.na(lhu1)) {
       stop(paste0(

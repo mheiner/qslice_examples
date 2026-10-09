@@ -10,6 +10,7 @@ imh_beta <- function(vv, log_target_theta, pseudo) {
   theta <- exp(c(ltheta, ltheta_K))
 
   lt0 <- log_target_theta(theta)
+  nEvaluations <- 1L
 
   ## straightforward incorporation of Jacobian to theta (remains commented out)
   # ljacob <- sum(ltheta) - sum(lvv)
@@ -49,6 +50,8 @@ imh_beta <- function(vv, log_target_theta, pseudo) {
     theta_cand <- exp(c(ltheta_cand, ltheta_K_cand))
 
     lt0_cand <- log_target_theta(theta_cand)
+    nEvaluations <- nEvaluations + 1L
+
     ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lvv_cand) +
       sum((pseudo$shape2 - Km1:1) * l1mv_cand) # includes Jacobian
     lfx_cand <- lt0_cand - ldens_pseudo_cand
@@ -62,7 +65,8 @@ imh_beta <- function(vv, log_target_theta, pseudo) {
   } else {
     out <- vv
   }
-  out
+
+  list(v = out, nEvaluations = nEvaluations)
 }
 
 
@@ -101,6 +105,7 @@ imh_decbetaU <- function(
   theta <- exp(c(ltheta, ltheta_K))
 
   lt0 <- log_target_theta(theta)
+  nEvaluations <- 1L
 
   ## tricky incorporation of Jacobian to theta
   ldens_pseudo <- sum((pseudo$shape1 - 1.0) * lv) +
@@ -141,6 +146,7 @@ imh_decbetaU <- function(
     theta_cand <- exp(c(ltheta_cand, ltheta_K_cand))
 
     lt0_cand <- log_target_theta(theta_cand)
+    nEvaluations <- nEvaluations + 1L
     ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lv_cand) +
       sum((pseudo$shape2 - Km1:1) * l1mv_cand) -
       sum(log(VfromU_cand$prob_intervals[-1])) # includes Jacobian
@@ -155,6 +161,7 @@ imh_decbetaU <- function(
   } else {
     out <- list(u = u, v = v, theta = theta)
   }
+  out$nEvaluations <- nEvaluations
   out
 }
 
@@ -174,7 +181,7 @@ mcmc_imh_stick <- function(
   simsV <- matrix(NA, ncol = Km1, nrow = n_iter)
   colnames(simsV) <- paste0("v", 1:Km1)
 
-  neval <- rep(2, n_iter)
+  neval <- numeric(n_iter)
 
   if (isTRUE(verbose)) {
     pb <- utils::txtProgressBar(min = 0, max = n_iter, style = 3)
@@ -198,11 +205,12 @@ mcmc_imh_stick <- function(
   for (i in 1:n_iter) {
     for (ii in 1:n_thin) {
       if (type == "unordered") {
-        state$v <- imh_beta(
+        tmp <- imh_beta(
           state$v,
           log_target_theta = log_target_theta,
           pseudo = pseudo
         ) # no need for transformation
+        state$v <- tmp$v
       } else if (type == "decreasing") {
         # working in U is mandatory
         tmp <- imh_decbetaU(
@@ -221,6 +229,7 @@ mcmc_imh_stick <- function(
     if (type == "decreasing") {
       simsU[i, ] <- u_now
     }
+    neval[i] <- tmp$nEvaluations
 
     if (isTRUE(verbose)) {
       utils::setTxtProgressBar(pb, i)

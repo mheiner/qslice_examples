@@ -29,6 +29,7 @@ rw_logit <- function(
   }
 
   lfx <- log_target_use(logits)
+  nEvaluations <- 1L
 
   if (is.nan(lfx) | is.infinite(lfx) | is.na(lfx)) {
     stop(paste0(
@@ -44,6 +45,7 @@ rw_logit <- function(
   z1 <- z + Cscale * rnorm(k)
   logits1 <- drop(SigL %*% z1 + mu)
   lfx1 <- log_target_use(logits1)
+  nEvaluations <- nEvaluations + 1L
 
   if (is.nan(lfx1) | is.na(lfx1)) {
     warning(paste0(
@@ -65,9 +67,19 @@ rw_logit <- function(
   lu_accpt <- log(runif(1, min = 0.0, max = 1.0))
 
   if (isTRUE(lu_accpt < lprob_accpt)) {
-    out <- list(z = z1, logits = logits1, nEvaluations = 2, accpt = TRUE)
+    out <- list(
+      z = z1,
+      logits = logits1,
+      nEvaluations = nEvaluations,
+      accpt = TRUE
+    )
   } else {
-    out <- list(z = z, logits = logits, nEvaluations = 2, accpt = FALSE)
+    out <- list(
+      z = z,
+      logits = logits,
+      nEvaluations = nEvaluations,
+      accpt = FALSE
+    )
   }
 
   out

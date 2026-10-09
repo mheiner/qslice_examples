@@ -3,8 +3,8 @@ ii <- as.numeric(args[1]) # job id
 dte <- as.numeric(args[2])
 
 ##### for testing
-# ii <- 1650
-# dte <- 260704
+# ii <- 1
+# dte <- 261009
 #####
 
 library("coda")
