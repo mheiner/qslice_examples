@@ -17,11 +17,12 @@ geodesic_shrinkage <- function(
 ) {
   ## Implemented from Schar et al, 2023
 
-  nEvaluations <- 0L
-  ltarg <- function(z) {
-    nEvaluations <<- nEvaluations + 1L
-    log_target(z)
-  }
+  ## will count evaluations at the GPSS level
+  # nEvaluations <- 0L
+  # ltarg <- function(z) {
+  #   nEvaluations <<- nEvaluations + 1L
+  #   log_target(z)
+  # }
 
   twopi <- 2.0 * pi
   y <- runif_equator(theta_now)
@@ -36,7 +37,7 @@ geodesic_shrinkage <- function(
     theta_out <- theta_now * cos(omega_now) + y * sin(omega_now)
     z_out <- drop(r_now * theta_out)
     x_out <- drop((SigL %*% z_out) + mu)
-    if (ltarg(x_out) > log_thresh) {
+    if (log_target(x_out) > log_thresh) {
       accpt <- TRUE
     } else {
       # shrink
@@ -48,7 +49,7 @@ geodesic_shrinkage <- function(
       iter <- iter + 1
     }
   }
-  list(x = theta_out, nEvaluations = nEvaluations)
+  list(x = theta_out) # , nEvaluations <- nEvaluations  # will count evaluations at the GPSS level
 }
 
 stepsrhink_rz <- function(
@@ -64,11 +65,12 @@ stepsrhink_rz <- function(
   ## Based on Schar et al 2023
   ## log_target here will refer only to g(x(z)) while z(r, theta) = r*theta
 
-  n_eval_now <- 0L
-  ltarg <- function(x) {
-    n_eval_now <<- n_eval_now + 1L # so we can count while stepping out
-    log_target(x)
-  }
+  ## will count evaluations at the GPSS level
+  # n_eval_now <- 0L
+  # ltarg <- function(x) {
+  #   n_eval_now <<- n_eval_now + 1L # so we can count while stepping out
+  #   log_target(x)
+  # }
 
   U <- runif(1, min = 0.0, max = 1.0)
   r_min <- max(r_now - U * w_step, 0.0)
@@ -78,7 +80,9 @@ stepsrhink_rz <- function(
   x_rmin <- (SigL %*% z_rmin) + mu
 
   ## step
-  while ((r_min > 0) && (ltarg(x_rmin) + (d - 1) * log(r_min) > log_thresh)) {
+  while (
+    (r_min > 0) && (log_target(x_rmin) + (d - 1) * log(r_min) > log_thresh)
+  ) {
     r_min <- max(r_min - w_step, 0.0)
     z_rmin <- drop(r_min * theta_now)
     x_rmin <- (SigL %*% z_rmin) + mu
@@ -87,7 +91,7 @@ stepsrhink_rz <- function(
   z_rmax <- drop(r_max * theta_now)
   x_rmax <- (SigL %*% z_rmax) + mu
 
-  while ((ltarg(x_rmax) + (d - 1) * log(r_max)) > log_thresh) {
+  while ((log_target(x_rmax) + (d - 1) * log(r_max)) > log_thresh) {
     r_max <- r_max + w_step
     z_rmax <- drop(r_max * theta_now)
     x_rmax <- (SigL %*% z_rmax) + mu
@@ -98,7 +102,7 @@ stepsrhink_rz <- function(
   x_cand <- drop((SigL %*% z_cand) + mu)
 
   ## shrink
-  while ((ltarg(x_cand) + (d - 1) * log(r_cand)) <= log_thresh) {
+  while ((log_target(x_cand) + (d - 1) * log(r_cand)) <= log_thresh) {
     if (r_cand < r_now) {
       r_min <- r_cand
     } else {
@@ -109,7 +113,7 @@ stepsrhink_rz <- function(
     x_cand <- drop((SigL %*% z_cand) + mu)
   }
 
-  list(x = x_cand, z = z_cand, r = r_cand, nEvaluations = n_eval_now)
+  list(x = x_cand, z = z_cand, r = r_cand) #, nEvaluations = n_eval_now) # will count evaluations at the GPSS level
 }
 
 slice_tgpolar_logits <- function(
@@ -140,19 +144,26 @@ slice_tgpolar_logits <- function(
   }
   dlrz_old <- (d - 1) * log(rz)
 
-  lthresh <- log(runif(1, min = 0.0, max = 1.0)) + log_target(x_old) + dlrz_old
-
+  nEvaluations <- 0L
   if (type == "decreasing") {
     log_target_use <- function(logits) {
       if (all(diff(logits) < 0.0) & all(logits > 0.0)) {
+        nEvaluations <<- nEvaluations + 1L
         out <- log_target(logits)
       } else {
         out <- -Inf
       }
     }
   } else if (type == "unordered") {
-    log_target_use <- log_target # rename function
+    log_target_use <- function(logits) {
+      nEvaluations <<- nEvaluations + 1L
+      log_target(logits)
+    }
   }
+
+  lthresh <- log(runif(1, min = 0.0, max = 1.0)) +
+    log_target_use(x_old) +
+    dlrz_old
 
   tmp <- geodesic_shrinkage(
     log_target = log_target_use,
@@ -163,7 +174,7 @@ slice_tgpolar_logits <- function(
     mu = mu
   )
 
-  neval_theta <- tmp$nEvaluations
+  # neval_theta <- tmp$nEvaluations
   thetaz_new <- tmp$x
 
   tmp <- stepsrhink_rz(
@@ -177,7 +188,7 @@ slice_tgpolar_logits <- function(
     w_step = w_step_rz
   )
 
-  neval_r <- tmp$nEvaluations
+  # neval_r <- tmp$nEvaluations
   rz_new <- tmp$r
   z_new <- tmp$z
   x_new <- tmp$x # stepshrink_rz built to be second update to save on one calculation of z and x
@@ -187,9 +198,9 @@ slice_tgpolar_logits <- function(
     rz = rz_new,
     z = z_new,
     x = x_new,
-    nEvaluations = 1 + neval_theta + neval_r,
-    nEvaluations_theta = neval_theta,
-    nEvaluations_r = neval_r
+    nEvaluations = 1 + neval_theta + neval_r
+    # nEvaluations_theta = neval_theta,
+    # nEvaluations_r = neval_r
   )
 }
 

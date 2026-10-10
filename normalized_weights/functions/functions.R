@@ -9,7 +9,7 @@ log1m_exp <- function(lx) {
   } else if (lx > -.Machine$double.eps) {
     out <- -Inf
     warning("log1m_exp input ", lx, "\nreturning -Inf")
-  } else if (lx > -0.693147) {
+  } else if (lx > -0.6931471805599453) {
     # .693147 ~= log(2.0)
 
     out <- log(-expm1(lx))
@@ -27,21 +27,45 @@ w_to_v <- function(w, tol = 1e-10) {
   w / c(1.0, 1.0 - cumsum(w)[-length(w)])
 }
 
-v_to_w <- function(v) {
+v_to_lw <- function(v) {
   # stick-breaking variables to weights; returns same length as argument
-  stopifnot(all(v >= 0.0), all(v <= 1.0))
+  stopifnot(
+    is.numeric(v),
+    length(v) >= 1L,
+    all(is.finite(v)),
+    all(v > 0.0),
+    all(v <= 1.0),
+    all(v[-length(v)] < 1.0)
+  )
 
-  ## below same as   # c(1.0, cumprod(1.0 - v[-length(v)])) * v
+  m <- length(v)
   lv <- log(v)
-  l1mv <- sapply(lv, log1m_exp)
-  lw <- c(0.0, cumsum(l1mv[-length(v)])) + lv
-  exp(lw)
+
+  if (m == 1L) {
+    return(lv)
+  }
+
+  # Only nonterminal complements enter the stick products.
+  l1mv <- log1p(-v[-m])
+
+  lv + c(0.0, cumsum(l1mv))
+}
+
+v_to_w <- function(v) {
+  exp(v_to_logw(v))
+}
+
+lw_to_logits <- function(lw) {
+  # returns length one LESS than argument
+  K <- length(w)
+  lw[1:(K - 1)] - log(w[K])
 }
 
 w_to_logits <- function(w) {
   # returns length one LESS than argument
-  K <- length(w)
-  log(w[1:(K - 1)]) - log(w[K])
+  stopifnot(all(w <= 1.0), all(w >= 0.0), sum(w) == 1.0)
+  lw <- log(w)
+  lw_to_logits(lw)
 }
 
 logits_to_w <- function(logits) {
@@ -65,6 +89,7 @@ log_targ_theta <- function(theta) {
 
   sum(llik) + sum(lpri)
 }
+
 
 ## marginal target for logits = logit(theta)
 log_targ_logits <- function(logits) {

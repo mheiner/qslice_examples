@@ -4,8 +4,14 @@ slice_hyperrect_indep_t <- function(
 ) {
   k <- length(u)
 
-  lhu <- log_target_u(u)$value
-  nEvaluations <- 1L
+  nEvaluations <- 0L
+
+  ltarg_u <- function(uu) {
+    nEvaluations <<- nEvaluations + 1L
+    log_target_u(uu)
+  }
+
+  lhu <- ltarg_u(u)$value
 
   if (is.infinite(lhu) | is.nan(lhu) | is.na(lhu)) {
     stop(paste0(
@@ -28,7 +34,6 @@ slice_hyperrect_indep_t <- function(
 
     tmp1 <- log_target_u(u1)
     lhu1 <- tmp1$value
-    nEvaluations <- nEvaluations + 1L
 
     if (is.nan(lhu1) | is.na(lhu1)) {
       stop(paste0(

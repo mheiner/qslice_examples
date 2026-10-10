@@ -9,16 +9,22 @@ slice_latent_logit <- function(
   latent_scale, # parameter for auxiliary distribution of latent_s
   type = "unordered"
 ) {
+  nEvaluations <- 0L
+
   if (type == "decreasing") {
     log_target_use <- function(logits) {
       if (all(diff(logits) < 0.0) & all(logits > 0.0)) {
+        nEvaluations <<- nEvaluations + 1L
         out <- log_target(logits)
       } else {
         out <- -Inf
       }
     }
   } else if (type == "unordered") {
-    log_target_use <- log_target # copy function
+    log_target_use <- function(logits) {
+      nEvaluations <<- nEvaluations + 1L
+      log_target(logits)
+    }
   }
 
   if (isTRUE(static_pseudo)) {
@@ -30,7 +36,6 @@ slice_latent_logit <- function(
   }
 
   lfx <- log_target_use(logits)
-  nEvaluations <- 1L
 
   if (is.nan(lfx) | is.infinite(lfx) | is.na(lfx)) {
     stop(paste0(
@@ -58,7 +63,6 @@ slice_latent_logit <- function(
     logits1 <- drop(SigL %*% z1 + mu)
 
     lfx1 <- log_target_use(logits1)
-    nEvaluations <- nEvaluations + 1L
 
     if (is.nan(lfx1) | is.na(lfx1)) {
       warning(paste0(

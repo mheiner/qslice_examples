@@ -160,7 +160,7 @@ mcmc_sample <- function(
     mc$simsZ <- matrix(NA, nrow = n_iter, ncol = length(mc$state$logits))
 
     for (ii in 1:n_iter) {
-      theta_now <- v_to_w(c(mc$simsV[ii, ], 0.9999999999))
+      theta_now <- v_to_w(c(mc$simsV[ii, ], 1.0))
       mc$sims_logits[ii, ] <- w_to_logits(theta_now)
       mc$simsZ[ii, ] <- forwardsolve(
         SigL,
@@ -169,7 +169,7 @@ mcmc_sample <- function(
         drop()
     }
 
-    mc$state$theta <- v_to_w(c(mc$state$v, 0.9999999999))
+    mc$state$theta <- v_to_w(c(mc$state$v, 1.0))
     mc$state$logits <- w_to_logits(mc$state$theta)
   } else {
     # sampled logits (sims outputs logits, simsZ included)

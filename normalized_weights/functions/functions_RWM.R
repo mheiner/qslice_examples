@@ -8,16 +8,21 @@ rw_logit <- function(
   Cscale, # tuning param
   type = "unordered"
 ) {
+  nEvaluations <- 0L
   if (type == "decreasing") {
     log_target_use <- function(logits) {
       if (all(diff(logits) < 0.0) & all(logits > 0.0)) {
+        nEvaluations <<- nEvaluations + 1L
         out <- log_target(logits)
       } else {
         out <- -Inf
       }
     }
   } else if (type == "unordered") {
-    log_target_use <- log_target # copy function
+    log_target_use <- function(logits) {
+      nEvaluations <<- nEvaluations + 1L
+      log_target(logits)
+    }
   }
 
   if (isTRUE(static_pseudo)) {
@@ -29,7 +34,6 @@ rw_logit <- function(
   }
 
   lfx <- log_target_use(logits)
-  nEvaluations <- 1L
 
   if (is.nan(lfx) | is.infinite(lfx) | is.na(lfx)) {
     stop(paste0(
@@ -45,7 +49,6 @@ rw_logit <- function(
   z1 <- z + Cscale * rnorm(k)
   logits1 <- drop(SigL %*% z1 + mu)
   lfx1 <- log_target_use(logits1)
-  nEvaluations <- nEvaluations + 1L
 
   if (is.nan(lfx1) | is.na(lfx1)) {
     warning(paste0(

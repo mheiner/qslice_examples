@@ -54,12 +54,12 @@ n_burn <- 10e3
 n_iter <- 50e3
 n_chains <- 3
 
-set.seed(dte + ii)
+set.seed(dte + rep_id)
 
 
 ## set up data-based pseudo-target
 cat("Setting up data-based pseudo-target\n")
-ensure_ergod <- TRUE
+stick_ratio_ergod_enforced <- TRUE
 
 (ps_naive <- a0 + xtab)
 (theta_hat_naive <- ps_naive / sum(ps_naive))
@@ -70,7 +70,7 @@ ensure_ergod <- TRUE
 
 pseudo_scale <- 0.9
 
-if (isTRUE(ensure_ergod)) {
+if (isTRUE(stick_ratio_ergod_enforced)) {
   ps_expos_rat <- min(ps_naive / ps_expos)
   pseudo_ref <- ps_expos * ps_expos_rat * pseudo_scale
 
@@ -103,13 +103,16 @@ pseudo <- list(
   static = TRUE # will change according to settings
 )
 
+pseudo_pilot <- pseudo
+pseudo_pilot$df <- 5 # fixed pilot setting for every sampler
+
 tuning_params <- list(w_step_rz = 1.0, w = 2, latent_scale = 1.0, Cscale = 0.6)
 
 ## initialize one chain
 init_state <- function() {
   state <- list()
   (state$v <- rbeta(K - 1, shape1 = pseudo$shape1, shape2 = pseudo$shape2))
-  (state$theta <- v_to_w(c(state$v, 0.9999999999)))
+  (state$theta <- v_to_w(c(state$v, 1.0)))
   if (type == "decreasing") {
     state$theta <- sort(state$theta, decreasing = TRUE)
     state$v <- w_to_v(state$theta)[-K]
@@ -135,7 +138,7 @@ if (isTRUE(to_tune) || pseudo_type == "samples") {
     sampler = "GESS",
     log_target_theta = log_mtarg_theta,
     log_target_logits = log_mtarg_logits,
-    pseudo = pseudo,
+    pseudo = pseudo_pilot,
     target_type = type,
     tuning_params = tuning_params,
     verbose = FALSE
@@ -148,7 +151,7 @@ if (isTRUE(to_tune) || pseudo_type == "samples") {
     sampler = "GESS",
     log_target_theta = log_mtarg_theta,
     log_target_logits = log_mtarg_logits,
-    pseudo = pseudo,
+    pseudo = pseudo_pilot,
     target_type = type,
     tuning_params = tuning_params,
     verbose = FALSE
@@ -174,7 +177,7 @@ if (pseudo_type == "samples") {
     pseudo$shape1 <- pseudo_ref_use
     pseudo$shape2 <- pseudo_ref_rcs_use
 
-    ensure_ergod <- FALSE
+    stick_ratio_ergod_enforced <- FALSE
 
     ## will also need mu and Sig on logits to compute Z for ESS
 
@@ -189,6 +192,7 @@ if (pseudo_type == "samples") {
 
   pseudo$static <- TRUE
 } else if (pseudo_type == "data") {
+  ## anticipates the use of this type of pseudo-target in Gibbs samplers where the counts may change from iter to iter
   pseudo$static <- FALSE
 }
 
@@ -240,8 +244,8 @@ if (isTRUE(to_tune)) {
   tuning_params[[tune_param_name]] <- NA
 }
 
-
 ## initialize chains
+set.seed(dte + ii)
 states <- lapply(1:n_chains, function(j) init_state())
 
 
@@ -330,7 +334,7 @@ tempDf <- data.frame(
   rep = run_info$rep,
   run_id = run_id,
   ii = ii,
-  unif_ergod = ensure_ergod,
+  stick_ergod_enforced = stick_ratio_ergod_enforced,
   tune_param_name = tune_param_name,
   tune_param_val = tuning_params[[tune_param_name]],
   n_chains = n_chains,

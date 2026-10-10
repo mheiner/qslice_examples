@@ -1,11 +1,6 @@
 slice_elliptical_mv_spherical <- function(z, sig, log_target) {
-  nEvaluations <- 0
   k <- length(z)
-  f <- function(z) {
-    nEvaluations <<- nEvaluations + 1
-    log_target(z)
-  }
-  fz <- f(z)$value
+  fz <- log_target(z)$value
   stopifnot(fz > -Inf)
   y <- log(runif(1)) + fz
   nu <- rnorm(k, 0, sd = sig)
@@ -15,9 +10,9 @@ slice_elliptical_mv_spherical <- function(z, sig, log_target) {
   theta_max <- theta
   repeat {
     z1 <- z * cos(theta) + nu * sin(theta)
-    fz1 <- f(z1)
+    fz1 <- log_target(z1)
     if (y < fz1$value) {
-      return(list(z = z1, x = fz1$x, nEvaluations = nEvaluations))
+      return(list(z = z1, x = fz1$x))
     }
     if (theta < 0) {
       theta_min <- theta
@@ -62,16 +57,19 @@ slice_genelliptical_mv_logits <- function(
   b <- 0.5 * (df + sum(z^2))
   s <- 1.0 / rgamma(1, shape = a, rate = b)
 
+  nEvaluations <- 0L
   lff <- function(zz) {
     xx <- drop(SigL %*% zz + mu)
     ssz <- sum(zz^2)
 
     if (type == "unordered") {
       out <- log_target_logits(xx) + a * log1p(ssz / df)
+      nEvaluations <<- nEvaluations + 1L
     } else if (type == "decreasing") {
       if (all(diff(xx) < 0.0) & all(xx > 0.0)) {
         # xx refers to logits here
         out <- log_target_logits(xx) + a * log1p(ssz / df)
+        nEvaluations <<- nEvaluations + 1L
       } else {
         out <- -Inf
       }
@@ -86,6 +84,7 @@ slice_genelliptical_mv_logits <- function(
     log_target = lff
   )
 
+  out_ess$nEvaluations <- nEvaluations
   out_ess
 }
 
