@@ -1,5 +1,7 @@
-CC <- matrix(exp(rnorm(n * K, mean = C_mu, sd = C_sig)), nrow = n)
-(CCsum <- rowSums(CC))
+lCC <- matrix(rnorm(n * K, mean = C_mu, sd = C_sig), nrow = n)
+CC <- exp(lCC)
+lCCsum <- apply(lCC, 1L, logsumexp)
+CCsum <- exp(lCCsum)
 
 theta <- rgamma(K, shape = a0)
 (theta <- theta / sum(theta))

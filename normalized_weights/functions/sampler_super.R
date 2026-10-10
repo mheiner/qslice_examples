@@ -3,7 +3,7 @@ mcmc_sample <- function(
   n_thin,
   state,
   sampler,
-  log_target_theta,
+  log_target_theta_log,
   log_target_logits,
   pseudo,
   target_type,
@@ -16,7 +16,7 @@ mcmc_sample <- function(
         n_iter = n_iter,
         n_thin = n_thin,
         state = state,
-        log_target_theta = log_targ_theta,
+        log_target_theta_log = log_targ_theta_log,
         pseudo = list(shape1 = pseudo$shape1, shape2 = pseudo$shape2),
         static_pseudo = pseudo$static,
         type = target_type,
@@ -45,7 +45,7 @@ mcmc_sample <- function(
         n_iter = n_iter,
         n_thin = n_thin,
         state = state,
-        log_target_theta = log_targ_theta,
+        log_target_theta_log = log_targ_theta_log,
         pseudo = list(shape1 = pseudo$shape1, shape2 = pseudo$shape2),
         static_pseudo = pseudo$static,
         type = target_type,
@@ -160,8 +160,8 @@ mcmc_sample <- function(
     mc$simsZ <- matrix(NA, nrow = n_iter, ncol = length(mc$state$logits))
 
     for (ii in 1:n_iter) {
-      theta_now <- v_to_w(c(mc$simsV[ii, ], 1.0))
-      mc$sims_logits[ii, ] <- w_to_logits(theta_now)
+      ltheta_now <- v_to_lw(c(mc$simsV[ii, ], 1.0))
+      mc$sims_logits[ii, ] <- lw_to_logits(ltheta_now)
       mc$simsZ[ii, ] <- forwardsolve(
         SigL,
         (mc$sims_logits[ii, ] - pseudo$mu)
@@ -169,19 +169,21 @@ mcmc_sample <- function(
         drop()
     }
 
-    mc$state$theta <- v_to_w(c(mc$state$v, 1.0))
-    mc$state$logits <- w_to_logits(mc$state$theta)
+    mc$state$ltheta <- v_to_lw(c(mc$state$v, 1.0))
+    mc$state$theta <- exp(mc$state$ltheta)
+    mc$state$logits <- lw_to_logits(mc$state$ltheta)
   } else {
     # sampled logits (sims outputs logits, simsZ included)
 
-    mc$state$theta <- logits_to_w(mc$state$logits)
-    mc$state$v <- w_to_v(mc$state$theta)[1:(length(mc$state$theta) - 1)]
+    mc$state$ltheta <- logits_to_lw(mc$state$logits)
+    mc$state$theta <- exp(mc$state$ltheta)
+    mc$state$v <- lw_to_v(mc$state$ltheta)[1:(length(mc$state$ltheta) - 1)]
 
     mc$simsV <- matrix(NA, nrow = n_iter, ncol = length(mc$state$v))
 
     for (ii in 1:n_iter) {
-      theta_now <- logits_to_w(mc$sims_logits[ii, ])
-      mc$simsV[ii, ] <- w_to_v(theta_now)[1:(length(theta_now) - 1)]
+      ltheta_now <- logits_to_lw(mc$sims_logits[ii, ])
+      mc$simsV[ii, ] <- lw_to_v(ltheta_now)[1:(length(ltheta_now) - 1)]
     }
   }
 

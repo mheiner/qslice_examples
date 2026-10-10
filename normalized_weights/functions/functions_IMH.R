@@ -1,15 +1,16 @@
-imh_beta <- function(vv, log_target_theta, pseudo) {
+imh_beta <- function(vv, log_target_theta_log, pseudo) {
   Km1 <- length(vv)
 
-  lvv <- log(vv)
-  l1mv <- sapply(lvv, log1m_exp)
+  lvv <- log(vv) # length K -1
+  l1mv <- log1p(-vv)
+  cs_l1mv <- cumsum(l1mv)
 
-  ltheta <- c(0.0, cumsum(l1mv[-Km1])) + lvv # will be K - 1
-  ltheta_K <- sum(l1mv)
+  ltheta <- c(0.0, cs_l1mv[-Km1]) + lvv # length K - 1
+  ltheta_K <- cs_l1mv[Km1] # equals sum(l1mv)
 
-  theta <- exp(c(ltheta, ltheta_K))
+  ltheta <- c(ltheta, ltheta_K) # becomes length K
 
-  lt0 <- log_target_theta(theta)
+  lt0 <- log_target_theta_log(ltheta)
   nEvaluations <- 1L
 
   ## straightforward incorporation of Jacobian to theta (remains commented out)
@@ -26,7 +27,8 @@ imh_beta <- function(vv, log_target_theta, pseudo) {
   vv_cand <- rbeta(Km1, shape1 = pseudo$shape1, shape2 = pseudo$shape2)
 
   lvv_cand <- log(vv_cand)
-  l1mv_cand <- sapply(lvv_cand, log1m_exp)
+  l1mv_cand <- log1p(-vv_cand)
+  cs_l1mv_cand <- cumsum(l1mv_cand)
 
   if (any(is.infinite(c(lvv_cand, l1mv_cand)))) {
     # out of support: return -Inf
@@ -44,12 +46,12 @@ imh_beta <- function(vv, log_target_theta, pseudo) {
 
     lfx_cand <- -Inf
   } else {
-    ltheta_cand <- c(0.0, cumsum(l1mv_cand[-Km1])) + lvv_cand # will be K - 1
-    ltheta_K_cand <- sum(l1mv_cand)
+    ltheta_cand <- c(0.0, cs_l1mv_cand[-Km1]) + lvv # length K - 1
+    ltheta_K_cand <- cs_l1mv_cand[Km1] # equals sum(l1mv_cand)
 
-    theta_cand <- exp(c(ltheta_cand, ltheta_K_cand))
+    ltheta_cand <- c(ltheta_cand, ltheta_K_cand) # becomes length K
 
-    lt0_cand <- log_target_theta(theta_cand)
+    lt0_cand <- log_target_theta_log(ltheta_cand)
     nEvaluations <- nEvaluations + 1L
 
     ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lvv_cand) +
@@ -73,7 +75,7 @@ imh_beta <- function(vv, log_target_theta, pseudo) {
 imh_decbetaU <- function(
   v = NULL,
   u = NULL,
-  log_target_theta,
+  log_target_theta_log,
   pseudo,
   static_pseudo = FALSE # could pseudo change from iteration to iteration? If not, we can build the chain on U and save computation
 ) {
@@ -97,14 +99,15 @@ imh_decbetaU <- function(
     u <- tnx$u
   }
 
-  l1mv <- sapply(lv, log1m_exp)
+  l1mv <- log1p(-v)
+  cs_l1mv <- cumsum(l1mv)
 
-  ltheta <- c(0.0, cumsum(l1mv[-Km1])) + lv # will be K - 1
-  ltheta_K <- sum(l1mv)
+  ltheta <- c(0.0, cs_l1mv[-Km1]) + lv # length K - 1
+  ltheta_K <- cs_l1mv[Km1]
 
-  theta <- exp(c(ltheta, ltheta_K))
+  ltheta <- c(ltheta, ltheta_K) # becomes length K
 
-  lt0 <- log_target_theta(theta)
+  lt0 <- log_target_theta_log(ltheta)
   nEvaluations <- 1L
 
   ## tricky incorporation of Jacobian to theta
@@ -122,7 +125,8 @@ imh_decbetaU <- function(
 
   v_cand <- VfromU_cand$v
   lv_cand <- VfromU_cand$lv
-  l1mv_cand <- sapply(lv_cand, log1m_exp)
+  l1mv_cand <- log1p(-v_cand)
+  cs_l1mv_cand <- cumsum(l1mv_cand)
 
   if (any(is.infinite(c(lv_cand, l1mv_cand)))) {
     # out of support: return -Inf
@@ -140,13 +144,14 @@ imh_decbetaU <- function(
 
     lfx_cand <- -Inf
   } else {
-    ltheta_cand <- c(0.0, cumsum(l1mv_cand[-Km1])) + lv_cand # will be K - 1
-    ltheta_K_cand <- sum(l1mv_cand)
+    ltheta_cand <- c(0.0, cs_l1mv_cand[-Km1]) + lv_cand # length K - 1
+    ltheta_K_cand <- cs_l1mv_cand[Km1] # equals sum(l1mv_cand)
 
-    theta_cand <- exp(c(ltheta_cand, ltheta_K_cand))
+    ltheta_cand <- c(ltheta_cand, ltheta_K_cand) # becomes length K
 
-    lt0_cand <- log_target_theta(theta_cand)
+    lt0_cand <- log_target_theta_log(ltheta_cand)
     nEvaluations <- nEvaluations + 1L
+
     ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lv_cand) +
       sum((pseudo$shape2 - Km1:1) * l1mv_cand) -
       sum(VfromU_cand$log_prob_intervals[-1]) # includes Jacobian
@@ -157,9 +162,9 @@ imh_decbetaU <- function(
   lu_accpt <- log(runif(1, min = 0.0, max = 1.0))
 
   if (isTRUE(lu_accpt < lprob_accpt)) {
-    out <- list(u = u_cand, v = v_cand, theta = theta_cand)
+    out <- list(u = u_cand, v = v_cand, ltheta = ltheta_cand)
   } else {
-    out <- list(u = u, v = v, theta = theta)
+    out <- list(u = u, v = v, ltheta = ltheta)
   }
   out$nEvaluations <- nEvaluations
   out
@@ -170,7 +175,7 @@ mcmc_imh_stick <- function(
   n_iter,
   n_thin,
   state,
-  log_target_theta,
+  log_target_theta_log,
   pseudo,
   static_pseudo = FALSE,
   type = "unordered",
@@ -207,7 +212,7 @@ mcmc_imh_stick <- function(
       if (type == "unordered") {
         tmp <- imh_beta(
           state$v,
-          log_target_theta = log_target_theta,
+          log_target_theta_log = log_target_theta_log,
           pseudo = pseudo
         ) # no need for transformation
         state$v <- tmp$v
@@ -216,7 +221,7 @@ mcmc_imh_stick <- function(
         tmp <- imh_decbetaU(
           v = state$v,
           u = u_now,
-          log_target_theta = log_target_theta,
+          log_target_theta_log = log_target_theta_log,
           pseudo = pseudo,
           static_pseudo = static_pseudo # T/F: could pseudo change from iteration to iteration? If not, we can build the chain on U and save computation
         )

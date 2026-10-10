@@ -63,7 +63,15 @@ stick_ratio_ergod_enforced <- TRUE
 
 (ps_naive <- a0 + xtab)
 (theta_hat_naive <- ps_naive / sum(ps_naive))
-(expos <- colSums(CC / drop(CC %*% theta_hat_naive)))
+
+CC_scaled <- exp(sweep(log_CC, 1L, apply(lCC, 1L, max), FUN = "-"))
+(expos <- colSums(
+  CC_scaled /
+    drop(CC_scaled %*% theta_hat_naive)
+))
+(expos0 <- colSums(CC / drop(CC %*% theta_hat_naive)))
+stopifnot(all.equal(expos, expos0))
+
 (theta_hat_expos0 <- xtab / expos)
 (theta_hat_expos <- theta_hat_expos0 / sum(theta_hat_expos0))
 (ps_expos <- a0 + theta_hat_expos * n)
@@ -112,12 +120,13 @@ tuning_params <- list(w_step_rz = 1.0, w = 2, latent_scale = 1.0, Cscale = 0.6)
 init_state <- function() {
   state <- list()
   (state$v <- rbeta(K - 1, shape1 = pseudo$shape1, shape2 = pseudo$shape2))
-  (state$theta <- v_to_w(c(state$v, 1.0)))
+  (state$ltheta <- v_to_lw(c(state$v, 1.0)))
   if (type == "decreasing") {
-    state$theta <- sort(state$theta, decreasing = TRUE)
-    state$v <- w_to_v(state$theta)[-K]
+    state$ltheta <- sort(state$ltheta, decreasing = TRUE)
+    state$v <- lw_to_v(state$theta)[-K]
   }
-  (state$logits <- w_to_logits(state$theta)) # must be all decreasing and greater than 0 if type == "decreasing"
+  (state$theta <- exp(state$ltheta))
+  (state$logits <- lw_to_logits(state$ltheta)) # must be all decreasing and greater than 0 if type == "decreasing"
   (state$latent_s <- rgamma(
     K - 1,
     shape = 2.0,
@@ -136,7 +145,7 @@ if (isTRUE(to_tune) || pseudo_type == "samples") {
     n_thin = 1,
     state = state,
     sampler = "GESS",
-    log_target_theta = log_mtarg_theta,
+    log_target_theta_log = log_mtarg_theta_log,
     log_target_logits = log_mtarg_logits,
     pseudo = pseudo_pilot,
     target_type = type,
@@ -149,7 +158,7 @@ if (isTRUE(to_tune) || pseudo_type == "samples") {
     n_thin = ifelse(type == "decreasing", 20, 4),
     state = mc$mc$state,
     sampler = "GESS",
-    log_target_theta = log_mtarg_theta,
+    log_target_theta_log = log_mtarg_theta_log,
     log_target_logits = log_mtarg_logits,
     pseudo = pseudo_pilot,
     target_type = type,
@@ -176,6 +185,12 @@ if (pseudo_type == "samples") {
 
     pseudo$shape1 <- pseudo_ref_use
     pseudo$shape2 <- pseudo_ref_rcs_use
+
+    stopifnot(
+      all(pseudo_ref_use > 0.0),
+      all(pseudo_ref_rcs_use > 0.0),
+      all(is.finite(c(pseudo_ref_use, pseudo_ref_rcs_use)))
+    )
 
     stick_ratio_ergod_enforced <- FALSE
 
@@ -256,7 +271,7 @@ mc <- lapply(1:n_chains, function(j) {
     n_thin = 1,
     state = states[[j]],
     sampler = sampler,
-    log_target_theta = log_mtarg_theta,
+    log_target_theta_log = log_mtarg_theta_log,
     log_target_logits = log_mtarg_logits,
     pseudo = pseudo,
     target_type = type,
@@ -278,7 +293,7 @@ mc <- lapply(1:n_chains, function(j) {
     n_thin = 1,
     state = states[[j]],
     sampler = sampler,
-    log_target_theta = log_mtarg_theta,
+    log_target_theta_log = log_mtarg_theta_log,
     log_target_logits = log_mtarg_logits,
     pseudo = pseudo,
     target_type = type,

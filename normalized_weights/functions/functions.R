@@ -27,6 +27,46 @@ w_to_v <- function(w, tol = 1e-10) {
   w / c(1.0, 1.0 - cumsum(w)[-length(w)])
 }
 
+v_to_w <- function(v) {
+  exp(v_to_logw(v))
+}
+
+lw_to_v <- function(lw) {
+  # log weights to stick-breaking variables; returns same length as argument
+  K <- length(lw)
+
+  if (K == 1L) {
+    return(1.0)
+  }
+
+  # log_remaining[k] = log(sum(exp(lw[k:K])))
+  log_remaining <- numeric(K)
+  log_remaining[K] <- lw[K]
+
+  for (k in seq.int(K - 1L, 1L)) {
+    a <- lw[k]
+    b <- log_remaining[k + 1L]
+
+    # Stable scalar log(exp(a) + exp(b)).
+    if (a >= b) {
+      log_remaining[k] <- a + log1p(exp(b - a))
+    } else {
+      log_remaining[k] <- b + log1p(exp(a - b))
+    }
+  }
+
+  lv <- lw - log_remaining
+
+  # Mathematically lv <= 0. pmin protects against tiny positive
+  # values caused by floating-point rounding.
+  v <- exp(pmin(lv, 0.0))
+
+  # Under the same-length convention, the terminal stick is exactly one.
+  v[K] <- 1.0
+
+  v
+}
+
 v_to_lw <- function(v) {
   # stick-breaking variables to weights; returns same length as argument
   stopifnot(
@@ -51,14 +91,10 @@ v_to_lw <- function(v) {
   lv + c(0.0, cumsum(l1mv))
 }
 
-v_to_w <- function(v) {
-  exp(v_to_logw(v))
-}
-
 lw_to_logits <- function(lw) {
   # returns length one LESS than argument
-  K <- length(w)
-  lw[1:(K - 1)] - log(w[K])
+  K <- length(lw)
+  lw[1:(K - 1)] - lw[K]
 }
 
 w_to_logits <- function(w) {
@@ -68,12 +104,16 @@ w_to_logits <- function(w) {
   lw_to_logits(lw)
 }
 
+logits_to_lw <- function(logits) {
+  # returns length one MORE than argument
+  lnum <- c(logits, 0.0)
+  ldenom <- logsumexp(lnum)
+  lnum - ldenom
+}
+
 logits_to_w <- function(logits) {
   # returns length one MORE than argument
-  elogits <- exp(logits)
-  sumelogits <- sum(elogits)
-  sump1 <- sumelogits + 1.0
-  c(elogits, 1.0) / sump1
+  exp(logits_to_lw(logits))
 }
 
 revcumsum <- function(x) rev(cumsum(rev(x[-1])))
@@ -90,11 +130,22 @@ log_targ_theta <- function(theta) {
   sum(llik) + sum(lpri)
 }
 
+log_targ_theta_log <- function(ltheta) {
+  ## also requires logC
+  ## this is the original target density on theta computed using ltheta = log(theta)
+  lthetalC <- rep(ltheta, each = n) + lCC
+  ldenoms <- apply(lthetalC, 1L, logsumexp)
+  lnums <- lthetalC[cbind(1:n, x)]
+  llik <- lnums - ldenoms
+  lpri <- (a0 - 1.0) * ltheta
+
+  sum(llik) + sum(lpri)
+}
 
 ## marginal target for logits = logit(theta)
 log_targ_logits <- function(logits) {
-  theta <- logits_to_w(logits)
-  out0 <- log_targ_theta(theta)
-  ljacob <- sum(log(theta))
+  ltheta <- logits_to_lw(logits)
+  out0 <- log_targ_theta_log(ltheta)
+  ljacob <- sum(ltheta)
   out0 + ljacob
 }

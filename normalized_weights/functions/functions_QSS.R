@@ -208,7 +208,7 @@ slice_hyperrect_stick <- function(
 slice_quantile_stick <- function(
   v,
   u = NULL,
-  log_target_theta,
+  log_target_theta_log,
   pseudo,
   static_pseudo = FALSE,
   type = "unordered"
@@ -236,7 +236,8 @@ slice_quantile_stick <- function(
       Km1 <- length(u)
 
       lvv <- log(vv)
-      l1mv <- sapply(lvv, log1m_exp)
+      l1mv <- log1p(-vv)
+      cs_l1mv <- cumsum(l1mv)
 
       if (any(is.infinite(c(lvv, l1mv)))) {
         # out of support: return -Inf
@@ -255,12 +256,12 @@ slice_quantile_stick <- function(
         ))
         out <- -Inf
       } else {
-        ltheta <- c(0.0, cumsum(l1mv[-Km1])) + lvv # will be K - 1
-        ltheta_K <- sum(l1mv)
+        ltheta <- c(0.0, cs_l1mv[-Km1]) + lvv # length K - 1
+        ltheta_K <- cs_l1mv[Km1]
 
-        theta <- exp(c(ltheta, ltheta_K))
+        ltheta <- c(ltheta, ltheta_K) # becomes length K
 
-        lt0 <- log_target_theta(theta)
+        lt0 <- log_target_theta_log(ltheta)
 
         ## straightforward incorporation of Jacobian
         # ljacob <- sum(ltheta) - sum(lvv)
@@ -288,7 +289,8 @@ slice_quantile_stick <- function(
 
       vv <- VfromU$v
       lvv <- VfromU$lv
-      l1mv <- sapply(lvv, log1m_exp)
+      l1mv <- log1p(-vv)
+      cs_l1mv <- cumsum(l1mv)
 
       if (any(is.infinite(c(lvv, l1mv)))) {
         # out of support: return -Inf
@@ -308,12 +310,12 @@ slice_quantile_stick <- function(
 
         out <- -Inf
       } else {
-        ltheta <- c(0.0, cumsum(l1mv[-Km1])) + lvv # will be K - 1
-        ltheta_K <- sum(l1mv)
+        ltheta <- c(0.0, cs_l1mv[-Km1]) + lvv # length K - 1
+        ltheta_K <- cs_l1mv[Km1]
 
-        theta <- exp(c(ltheta, ltheta_K))
+        ltheta <- c(ltheta, ltheta_K) # becomes length K
 
-        lt0 <- log_target_theta(theta)
+        lt0 <- log_target_theta_log(ltheta)
 
         ## straightforward incorporation of Jacobian theta to V
         # ljacob <- sum(ltheta) - sum(lvv)
@@ -343,7 +345,7 @@ mcmc_qss_stick <- function(
   n_iter,
   n_thin,
   state,
-  log_target_theta,
+  log_target_theta_log,
   pseudo,
   static_pseudo = TRUE,
   type = "unordered",
@@ -384,7 +386,7 @@ mcmc_qss_stick <- function(
       tmp <- slice_quantile_stick(
         v = state$v,
         u = u_now,
-        log_target_theta = log_target_theta,
+        log_target_theta_log = log_target_theta_log,
         pseudo = pseudo,
         static_pseudo = static_pseudo,
         type = type

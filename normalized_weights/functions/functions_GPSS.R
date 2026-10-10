@@ -32,7 +32,7 @@ geodesic_shrinkage <- function(
   accpt <- FALSE
   iter <- 1
 
-  while (isFALSE(accpt) && iter < 5000) {
+  while (isFALSE(accpt) && iter < 5001) {
     omega_now <- runif(1, min = omega_min, max = omega_max)
     theta_out <- theta_now * cos(omega_now) + y * sin(omega_now)
     z_out <- drop(r_now * theta_out)
@@ -48,6 +48,9 @@ geodesic_shrinkage <- function(
       }
       iter <- iter + 1
     }
+  }
+  if (isFALSE(accpt)) {
+    stop("Exhausted all attempts at geodesic shrinkage.")
   }
   list(x = theta_out) # , nEvaluations <- nEvaluations  # will count evaluations at the GPSS level
 }
