@@ -28,7 +28,7 @@ w_to_v <- function(w, tol = 1e-10) {
 }
 
 v_to_w <- function(v) {
-  exp(v_to_logw(v))
+  exp(v_to_lw(v))
 }
 
 lw_to_v <- function(lw) {
@@ -97,9 +97,9 @@ lw_to_logits <- function(lw) {
   lw[1:(K - 1)] - lw[K]
 }
 
-w_to_logits <- function(w) {
+w_to_logits <- function(w, tol = 1.0e-12) {
   # returns length one LESS than argument
-  stopifnot(all(w <= 1.0), all(w >= 0.0), sum(w) == 1.0)
+  stopifnot(all(w <= 1.0), all(w >= 0.0), abs(sum(w) - 1.0) < tol)
   lw <- log(w)
   lw_to_logits(lw)
 }
@@ -134,7 +134,8 @@ log_targ_theta_log <- function(ltheta) {
   ## also requires logC
   ## this is the original target density on theta computed using ltheta = log(theta)
   lthetalC <- rep(ltheta, each = n) + lCC
-  ldenoms <- apply(lthetalC, 1L, logsumexp)
+  # ldenoms <- apply(lthetalC, 1L, logsumexp)
+  ldenoms <- matrixStats::rowLogSumExps(lthetalC) # faster and used univerally by all samplers
   lnums <- lthetalC[cbind(1:n, x)]
   llik <- lnums - ldenoms
   lpri <- (a0 - 1.0) * ltheta

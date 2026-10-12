@@ -46,7 +46,7 @@ imh_beta <- function(vv, log_target_theta_log, pseudo) {
 
     lfx_cand <- -Inf
   } else {
-    ltheta_cand <- c(0.0, cs_l1mv_cand[-Km1]) + lvv # length K - 1
+    ltheta_cand <- c(0.0, cs_l1mv_cand[-Km1]) + lvv_cand # length K - 1
     ltheta_K_cand <- cs_l1mv_cand[Km1] # equals sum(l1mv_cand)
 
     ltheta_cand <- c(ltheta_cand, ltheta_K_cand) # becomes length K

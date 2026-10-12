@@ -4,19 +4,12 @@ slice_hyperrect_indep_t <- function(
 ) {
   k <- length(u)
 
-  nEvaluations <- 0L
-
-  ltarg_u <- function(uu) {
-    nEvaluations <<- nEvaluations + 1L
-    log_target_u(uu)
-  }
-
-  lhu <- ltarg_u(u)$value
+  lhu <- log_target_u(u)$value
 
   if (is.infinite(lhu) | is.nan(lhu) | is.na(lhu)) {
     stop(paste0(
       "input u = ",
-      paste(x, collapse = " "),
+      paste(u, collapse = " "),
       "\n",
       "log_target_u(u) = ",
       lhu,
@@ -29,7 +22,10 @@ slice_hyperrect_indep_t <- function(
   L <- rep(0.0, k)
   R <- rep(1.0, k)
 
+  nAttempts <- 0L
+
   repeat {
+    nAttempts <- nAttempts + 1L
     u1 <- L + runif(k, min = 0.0, max = 1.0) * (R - L)
 
     tmp1 <- log_target_u(u1)
@@ -55,7 +51,7 @@ slice_hyperrect_indep_t <- function(
       ))
     }
 
-    if (nEvaluations > 3001) {
+    if (nAttempts > 3000) {
       stop(paste0(
         "Exceeded maximum shrinkage steps for U\n",
         "current L: ",
@@ -71,7 +67,7 @@ slice_hyperrect_indep_t <- function(
     }
 
     if (y < lhu1) {
-      return(list(u = u1, x = tmp1$x, z = tmp1$z, nEvaluations = nEvaluations))
+      return(list(u = u1, x = tmp1$x, z = tmp1$z))
     }
 
     shrinkL <- (u1 < u)
@@ -120,6 +116,12 @@ slice_hyperrect_logits <- function(
   stopifnot(length(mu) == k)
   stopifnot(dim(Sig) == c(k, k))
 
+  nEvaluations <- 0L
+  ltarg_logits <- function(logits) {
+    nEvaluations <<- nEvaluations + 1L
+    log_target_logits(logits)
+  }
+
   a <- 0.5 * (df + 1.0)
 
   lff <- function(uu) {
@@ -128,11 +130,11 @@ slice_hyperrect_logits <- function(
     zzsq <- zz^2
 
     if (type == "unordered") {
-      out <- log_target_logits(xx) + a * sum(log1p(zzsq / df))
+      out <- ltarg_logits(xx) + a * sum(log1p(zzsq / df))
     } else if (type == "decreasing") {
       if (all(diff(xx) < 0.0) & all(xx > 0.0)) {
         # xx refers to logits here
-        out <- log_target_logits(xx) + a * sum(log1p(zzsq / df))
+        out <- ltarg_logits(xx) + a * sum(log1p(zzsq / df))
       } else {
         out <- -Inf
       }
@@ -142,6 +144,7 @@ slice_hyperrect_logits <- function(
   }
 
   out_qss <- slice_hyperrect_indep_t(u = u, log_target_u = lff)
+  out_qss$nEvaluations <- nEvaluations
 
   out_qss
 }
@@ -197,7 +200,7 @@ mcmc_qss_logit <- function(
         x = state$logits,
         z = z_now,
         u = u_now,
-        log_target = log_target,
+        log_target_logits = log_target,
         mu = mu,
         Sig = SigL,
         df = df,

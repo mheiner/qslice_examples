@@ -3,11 +3,12 @@ ii <- as.numeric(args[1]) # job id
 dte <- as.numeric(args[2])
 
 ##### for testing
-# ii <- 1
-# dte <- 261009
+# ii <- 23
+# dte <- 261012
 #####
 
 library("coda")
+library("matrixStats")
 
 source("functions/functions.R")
 source("functions/functions_truncbeta.R")
@@ -64,13 +65,13 @@ stick_ratio_ergod_enforced <- TRUE
 (ps_naive <- a0 + xtab)
 (theta_hat_naive <- ps_naive / sum(ps_naive))
 
-CC_scaled <- exp(sweep(log_CC, 1L, apply(lCC, 1L, max), FUN = "-"))
+CC_scaled <- exp(sweep(lCC, 1L, apply(lCC, 1L, max), FUN = "-"))
 (expos <- colSums(
   CC_scaled /
     drop(CC_scaled %*% theta_hat_naive)
 ))
 (expos0 <- colSums(CC / drop(CC %*% theta_hat_naive)))
-stopifnot(all.equal(expos, expos0))
+stopifnot(max(abs(expos - expos0)) < 1.0e-9)
 
 (theta_hat_expos0 <- xtab / expos)
 (theta_hat_expos <- theta_hat_expos0 / sum(theta_hat_expos0))
@@ -123,7 +124,7 @@ init_state <- function() {
   (state$ltheta <- v_to_lw(c(state$v, 1.0)))
   if (type == "decreasing") {
     state$ltheta <- sort(state$ltheta, decreasing = TRUE)
-    state$v <- lw_to_v(state$theta)[-K]
+    state$v <- lw_to_v(state$ltheta)[-K]
   }
   (state$theta <- exp(state$ltheta))
   (state$logits <- lw_to_logits(state$ltheta)) # must be all decreasing and greater than 0 if type == "decreasing"
@@ -145,8 +146,8 @@ if (isTRUE(to_tune) || pseudo_type == "samples") {
     n_thin = 1,
     state = state,
     sampler = "GESS",
-    log_target_theta_log = log_mtarg_theta_log,
-    log_target_logits = log_mtarg_logits,
+    log_target_theta_log = log_targ_theta_log,
+    log_target_logits = log_targ_logits,
     pseudo = pseudo_pilot,
     target_type = type,
     tuning_params = tuning_params,
@@ -158,8 +159,8 @@ if (isTRUE(to_tune) || pseudo_type == "samples") {
     n_thin = ifelse(type == "decreasing", 20, 4),
     state = mc$mc$state,
     sampler = "GESS",
-    log_target_theta_log = log_mtarg_theta_log,
-    log_target_logits = log_mtarg_logits,
+    log_target_theta_log = log_targ_theta_log,
+    log_target_logits = log_targ_logits,
     pseudo = pseudo_pilot,
     target_type = type,
     tuning_params = tuning_params,
@@ -235,7 +236,7 @@ if (isTRUE(to_tune)) {
 
   mc_tune <- tune(
     state = mc$mc$state,
-    log_target = log_mtarg_logits, # each of the tuned algorithms work on logit space
+    log_target = log_targ_logits, # each of the tuned algorithms work on logit space
     target_type = type,
     sampler = sampler,
     settings = tuning_params, # named list with tuning parameter values
@@ -271,8 +272,8 @@ mc <- lapply(1:n_chains, function(j) {
     n_thin = 1,
     state = states[[j]],
     sampler = sampler,
-    log_target_theta_log = log_mtarg_theta_log,
-    log_target_logits = log_mtarg_logits,
+    log_target_theta_log = log_targ_theta_log,
+    log_target_logits = log_targ_logits,
     pseudo = pseudo,
     target_type = type,
     tuning_params = tuning_params,
@@ -293,8 +294,8 @@ mc <- lapply(1:n_chains, function(j) {
     n_thin = 1,
     state = states[[j]],
     sampler = sampler,
-    log_target_theta_log = log_mtarg_theta_log,
-    log_target_logits = log_mtarg_logits,
+    log_target_theta_log = log_targ_theta_log,
+    log_target_logits = log_targ_logits,
     pseudo = pseudo,
     target_type = type,
     tuning_params = tuning_params,

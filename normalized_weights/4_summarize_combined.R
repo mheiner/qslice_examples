@@ -1,8 +1,8 @@
 rm(list = ls())
 library("tidyverse")
 
-dte <- 260704 # f06; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
-dte <- 261009 #
+# dte <- 260704 # f06; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
+dte <- 261012 # f04; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
 
 
 # load(paste0("input/schedule_all_", dte, ".rda"))

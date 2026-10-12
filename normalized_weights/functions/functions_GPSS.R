@@ -201,7 +201,8 @@ slice_tgpolar_logits <- function(
     rz = rz_new,
     z = z_new,
     x = x_new,
-    nEvaluations = 1 + neval_theta + neval_r
+    nEvaluations = nEvaluations
+    # nEvaluations = 1 + neval_theta + neval_r,
     # nEvaluations_theta = neval_theta,
     # nEvaluations_r = neval_r
   )

@@ -179,10 +179,6 @@ qtruncbeta <- function(p, shape1, shape2, lower, upper) {
 
   list(
     q = q_out,
-    # Retained for compatibility/diagnostics only. This can legitimately
-    # underflow to zero; never take log(prob_interval).
-    prob_interval = exp(setup$lp_interval),
-    # Use this value in every log-density calculation.
     log_prob_interval = setup$lp_interval
   )
 }
@@ -232,7 +228,6 @@ ptruncbeta <- function(q, shape1, shape2, lower, upper) {
 
   list(
     p = vapply(q, p_one, numeric(1)),
-    prob_interval = exp(setup$lp_interval),
     log_prob_interval = setup$lp_interval
   )
 }

@@ -59,9 +59,6 @@ V_decseq_from_U <- function(u_vec, shape1_vec, shape2_vec) {
     lv = log(vv),
     lower = lower,
     upper = upper,
-    # Kept only for compatibility/printing. It may contain exact zeros from
-    # underflow even when log_prob_intervals is finite.
-    prob_intervals = exp(log_prob_interval),
     log_prob_intervals = log_prob_interval
   )
 }
@@ -120,7 +117,6 @@ U_from_Vdecseq <- function(v_vec, shape1_vec, shape2_vec) {
     u = u,
     lower = lower,
     upper = upper,
-    prob_intervals = exp(log_prob_interval),
     log_prob_intervals = log_prob_interval
   )
 }
@@ -138,7 +134,7 @@ slice_hyperrect_stick <- function(
   if (is.infinite(lhu) | is.nan(lhu) | is.na(lhu)) {
     stop(paste0(
       "input u = ",
-      paste(x, collapse = " "),
+      paste(u, collapse = " "),
       "\n",
       "log_target_u(u) = ",
       lhu,
