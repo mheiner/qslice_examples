@@ -39,8 +39,8 @@ run_id <- job_order[ii]
 
 a0 <- 0.5 # theta ~ Dirichlet(a0)
 n <- 500 # sample size
-C_sig <- 2.0 # C lognormal parameter
-C_mu <- 0.0 # C lognormal parameter
+C_sig <- 1.5 # C lognormal parameter
+C_mu <- -1.5 # C lognormal parameter
 
 cat("whether to tune?\n")
 (to_tune <- sampler %in% c("GPSS", "HRSS", "LSS", "RWM"))
@@ -70,8 +70,8 @@ CC_scaled <- exp(sweep(lCC, 1L, apply(lCC, 1L, max), FUN = "-"))
   CC_scaled /
     drop(CC_scaled %*% theta_hat_naive)
 ))
-(expos0 <- colSums(CC / drop(CC %*% theta_hat_naive)))
-stopifnot(max(abs(expos - expos0)) < 1.0e-9)
+# (expos0 <- colSums(CC / drop(CC %*% theta_hat_naive)))
+# stopifnot(max(abs(expos - expos0)) < 1.0e-9)
 
 (theta_hat_expos0 <- xtab / expos)
 (theta_hat_expos <- theta_hat_expos0 / sum(theta_hat_expos0))

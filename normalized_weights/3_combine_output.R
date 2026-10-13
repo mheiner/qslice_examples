@@ -1,7 +1,7 @@
-dte <- 261012
+dte <- 26101240
 
 files_all <- list.files("output")
-files_use <- files_all[grep(paste0(".*_dte", dte), x = files_all)]
+files_use <- files_all[grep(paste0(".*_dte", dte, ".csv"), x = files_all)]
 
 temp <- lapply(paste0("output/", files_use), read.csv)
 out <- do.call(rbind, temp)

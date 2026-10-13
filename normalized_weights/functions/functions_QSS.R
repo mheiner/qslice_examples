@@ -31,16 +31,21 @@ V_decseq_from_U <- function(u_vec, shape1_vec, shape2_vec) {
       upper[k] <- .decseq_upper(vv[k - 1L])
     }
     if (lower[k] >= upper[k]) {
-      stop(
-        "Empty decreasing-stick interval at component ",
-        k,
-        ": lower = ",
-        lower[k],
-        ", upper = ",
-        upper[k],
-        ".",
-        call. = FALSE
-      )
+      # warning(
+      #   "Empty decreasing-stick interval at component ",
+      #   k,
+      #   ": lower = ",
+      #   lower[k],
+      #   ", upper = ",
+      #   upper[k],
+      #   "."
+      # )
+      return(list(
+        valid = FALSE,
+        failure_component = k,
+        lower = lower,
+        upper = upper
+      ))
     }
 
     tmp <- qtruncbeta(
@@ -59,7 +64,8 @@ V_decseq_from_U <- function(u_vec, shape1_vec, shape2_vec) {
     lv = log(vv),
     lower = lower,
     upper = upper,
-    log_prob_intervals = log_prob_interval
+    log_prob_intervals = log_prob_interval,
+    valid = TRUE
   )
 }
 
@@ -147,11 +153,16 @@ slice_hyperrect_stick <- function(
   L <- rep(0.0, k)
   R <- rep(1.0, k)
 
+  nAttempts <- 0L
+
   repeat {
+    nAttempts <- nAttempts + 1L
     u1 <- L + runif(k, min = 0.0, max = 1.0) * (R - L)
     tmp1 <- log_target_u(u1)
     lhu1 <- tmp1$lhu
-    nEvaluations <- nEvaluations + 1L
+    if (isTRUE(tmp1$eval)) {
+      nEvaluations <- nEvaluations + 1L
+    }
 
     if (is.nan(lhu1) | is.na(lhu1)) {
       stop(paste0(
@@ -167,7 +178,7 @@ slice_hyperrect_stick <- function(
       ))
     }
 
-    if (nEvaluations > 3001) {
+    if (nAttempts > 3001) {
       stop(paste0(
         "Exceeded maximum shrinkage steps for U\n",
         "current L: ",
@@ -251,6 +262,7 @@ slice_quantile_stick <- function(
           "Out of support. Proceeding by returning -Inf"
         ))
         out <- -Inf
+        eval <- FALSE
       } else {
         ltheta <- c(0.0, cs_l1mv[-Km1]) + lvv # length K - 1
         ltheta_K <- cs_l1mv[Km1]
@@ -258,6 +270,7 @@ slice_quantile_stick <- function(
         ltheta <- c(ltheta, ltheta_K) # becomes length K
 
         lt0 <- log_target_theta_log(ltheta)
+        eval <- TRUE
 
         ## straightforward incorporation of Jacobian
         # ljacob <- sum(ltheta) - sum(lvv)
@@ -272,7 +285,7 @@ slice_quantile_stick <- function(
         out <- lt0 - ldens_pseudo # dividing by this pseudo puts Jacobian to numerator
       }
 
-      list(lhu = out, v = vv)
+      list(lhu = out, v = vv, eval = eval)
     }
   } else if (type == "decreasing") {
     lhu <- function(u) {
@@ -283,51 +296,58 @@ slice_quantile_stick <- function(
         shape2_vec = pseudo$shape2
       )
 
-      vv <- VfromU$v
-      lvv <- VfromU$lv
-      l1mv <- log1p(-vv)
-      cs_l1mv <- cumsum(l1mv)
+      if (isTRUE(VfromU$valid)) {
+        vv <- VfromU$v
+        lvv <- VfromU$lv
+        l1mv <- log1p(-vv)
+        cs_l1mv <- cumsum(l1mv)
 
-      if (any(is.infinite(c(lvv, l1mv)))) {
-        # out of support: return -Inf
+        if (any(is.infinite(c(lvv, l1mv)))) {
+          # out of support: return -Inf
 
-        warning(paste0(
-          "QSS lhu input u = ",
-          paste(u, collapse = " "),
-          "\n",
-          "log(v) = ",
-          paste(lvv, collapse = " "),
-          "\n",
-          "log(1-v) = ",
-          paste(l1mv, collapse = " "),
-          "\n",
-          "Out of support. Proceeding by returning -Inf"
-        ))
+          warning(paste0(
+            "QSS lhu input u = ",
+            paste(u, collapse = " "),
+            "\n",
+            "log(v) = ",
+            paste(lvv, collapse = " "),
+            "\n",
+            "log(1-v) = ",
+            paste(l1mv, collapse = " "),
+            "\n",
+            "Out of support. Proceeding by returning -Inf"
+          ))
 
-        out <- -Inf
+          out <- -Inf
+          eval <- FALSE
+        } else {
+          ltheta <- c(0.0, cs_l1mv[-Km1]) + lvv # length K - 1
+          ltheta_K <- cs_l1mv[Km1]
+
+          ltheta <- c(ltheta, ltheta_K) # becomes length K
+
+          lt0 <- log_target_theta_log(ltheta)
+          eval <- TRUE
+
+          ## straightforward incorporation of Jacobian theta to V
+          # ljacob <- sum(ltheta) - sum(lvv)
+          # lt <- lt0 + ljacob
+          #
+          # ldens_pseudo <- sum((pseudo$shape1 - 1.0)*lvv) + sum((pseudo$shape2 - 1.0)*l1mv) - sum(VfromU$log_prob_intervals[-1])
+          # out <- lt - ldens_pseudo
+
+          ## tricky incorporation of Jacobian theta to V
+          ldens_pseudo <- sum((pseudo$shape1 - 1.0) * lvv) +
+            sum((pseudo$shape2 - Km1:1) * l1mv) -
+            sum(VfromU$log_prob_intervals[-1]) # includes Jacobian
+          out <- lt0 - ldens_pseudo # dividing by this pseudo puts Jacobian to numerator
+        }
       } else {
-        ltheta <- c(0.0, cs_l1mv[-Km1]) + lvv # length K - 1
-        ltheta_K <- cs_l1mv[Km1]
-
-        ltheta <- c(ltheta, ltheta_K) # becomes length K
-
-        lt0 <- log_target_theta_log(ltheta)
-
-        ## straightforward incorporation of Jacobian theta to V
-        # ljacob <- sum(ltheta) - sum(lvv)
-        # lt <- lt0 + ljacob
-        #
-        # ldens_pseudo <- sum((pseudo$shape1 - 1.0)*lvv) + sum((pseudo$shape2 - 1.0)*l1mv) - sum(VfromU$log_prob_intervals[-1])
-        # out <- lt - ldens_pseudo
-
-        ## tricky incorporation of Jacobian theta to V
-        ldens_pseudo <- sum((pseudo$shape1 - 1.0) * lvv) +
-          sum((pseudo$shape2 - Km1:1) * l1mv) -
-          sum(VfromU$log_prob_intervals[-1]) # includes Jacobian
-        out <- lt0 - ldens_pseudo # dividing by this pseudo puts Jacobian to numerator
+        out <- -Inf
+        vv <- NA
+        eval <- FALSE
       }
-
-      list(lhu = out, v = vv)
+      list(lhu = out, v = vv, eval = eval)
     }
   }
 

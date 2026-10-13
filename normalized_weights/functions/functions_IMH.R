@@ -123,39 +123,43 @@ imh_decbetaU <- function(
     shape2_vec = pseudo$shape2
   )
 
-  v_cand <- VfromU_cand$v
-  lv_cand <- VfromU_cand$lv
-  l1mv_cand <- log1p(-v_cand)
-  cs_l1mv_cand <- cumsum(l1mv_cand)
+  if (isTRUE(VfromU_cand$valid)) {
+    v_cand <- VfromU_cand$v
+    lv_cand <- VfromU_cand$lv
+    l1mv_cand <- log1p(-v_cand)
+    cs_l1mv_cand <- cumsum(l1mv_cand)
 
-  if (any(is.infinite(c(lv_cand, l1mv_cand)))) {
-    # out of support: return -Inf
+    if (any(is.infinite(c(lv_cand, l1mv_cand)))) {
+      # out of support: return -Inf
 
-    warning(paste0(
-      "IMH proposal\n",
-      "log(v) = ",
-      paste(lv_cand, collapse = " "),
-      "\n",
-      "log(1-v) = ",
-      paste(l1mv_cand, collapse = " "),
-      "\n",
-      "Out of support. Proceeding by returning -Inf"
-    ))
+      warning(paste0(
+        "IMH proposal\n",
+        "log(v) = ",
+        paste(lv_cand, collapse = " "),
+        "\n",
+        "log(1-v) = ",
+        paste(l1mv_cand, collapse = " "),
+        "\n",
+        "Out of support. Proceeding by returning -Inf"
+      ))
 
-    lfx_cand <- -Inf
+      lfx_cand <- -Inf
+    } else {
+      ltheta_cand <- c(0.0, cs_l1mv_cand[-Km1]) + lv_cand # length K - 1
+      ltheta_K_cand <- cs_l1mv_cand[Km1] # equals sum(l1mv_cand)
+
+      ltheta_cand <- c(ltheta_cand, ltheta_K_cand) # becomes length K
+
+      lt0_cand <- log_target_theta_log(ltheta_cand)
+      nEvaluations <- nEvaluations + 1L
+
+      ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lv_cand) +
+        sum((pseudo$shape2 - Km1:1) * l1mv_cand) -
+        sum(VfromU_cand$log_prob_intervals[-1]) # includes Jacobian
+      lfx_cand <- lt0_cand - ldens_pseudo_cand
+    }
   } else {
-    ltheta_cand <- c(0.0, cs_l1mv_cand[-Km1]) + lv_cand # length K - 1
-    ltheta_K_cand <- cs_l1mv_cand[Km1] # equals sum(l1mv_cand)
-
-    ltheta_cand <- c(ltheta_cand, ltheta_K_cand) # becomes length K
-
-    lt0_cand <- log_target_theta_log(ltheta_cand)
-    nEvaluations <- nEvaluations + 1L
-
-    ldens_pseudo_cand <- sum((pseudo$shape1 - 1.0) * lv_cand) +
-      sum((pseudo$shape2 - Km1:1) * l1mv_cand) -
-      sum(VfromU_cand$log_prob_intervals[-1]) # includes Jacobian
-    lfx_cand <- lt0_cand - ldens_pseudo_cand
+    lfx_cand <- -Inf
   }
 
   lprob_accpt <- lfx_cand - lfx_old

@@ -1,9 +1,10 @@
 rm(list = ls())
 library("tidyverse")
 
-# dte <- 260704 # f06; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
-dte <- 261012 # f04; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
-
+dte <- 260704 # f06; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
+dte <- 261012 # f04; K = 20; C ~ lognormal(0, sig = 2.0); robust theta and C calc
+dte <- 26101240 # f06; K = 40; C ~ lognormal(0, sig = 2.0); burn-in with GESS
+dte <- 261013 # f04; K = 20; C ~ lognormal(-1.5, sig = 1.5)
 
 # load(paste0("input/schedule_all_", dte, ".rda"))
 dat0 <- read.csv(paste0("output/combined_all_", dte, ".csv"))
@@ -34,12 +35,14 @@ table(dat0$sampler, dat0$target, dat0$pseudo, dat0$K)
 targets_now <- "unordered"
 targets_now <- "decreasing"
 targets_now <- c("unordered", "decreasing")
+
 pseudos_now <- c("data", "samples")
 pseudos_now <- "data"
 pseudos_now <- "samples"
+
 K_now <- 10
 K_now <- 20
-K_now <- 25
+K_now <- 40
 
 dat <- dat0 %>%
   filter(target %in% targets_now, K %in% K_now, pseudo %in% pseudos_now)

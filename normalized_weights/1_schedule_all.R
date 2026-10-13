@@ -1,11 +1,11 @@
 rm(list = ls())
 
-dte <- 26101250
+dte <- 261013
 set.seed(dte)
 
 n_reps <- 50
 
-Ks <- c(50)
+Ks <- c(20)
 targets <- c("unordered", "decreasing")
 pseudo_types <- c("data", "samples")
 
