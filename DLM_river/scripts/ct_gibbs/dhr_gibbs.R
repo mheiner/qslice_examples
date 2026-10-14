@@ -175,7 +175,8 @@ dhr <- function(
         sigma2_now,
         theta_now,
         frequencies,
-        period
+        period,
+        times
       )
 
       # Once the phase shifts are updated, update the F matrix

@@ -18,9 +18,9 @@ dlm_likelihood_components <- function(theta, parameters) {
 
   process_means <- c(m0, theta[1:(n - 1)])
   process_sds <- sqrt(c(
-    v0 + tau2 * time_diff[1],
+    v0 + tau2 * time_diff[1], # corresponds with an unrestriced DLM that assumes theta0 integrated out, time diff from 0 to 1 is mean(time_diff)
     rep(tau2, n - 1) * time_diff[2:n]
-  )) # assumes theta0 integrated out, time diff from 0 to 1 is 1.0
+  ))
   lprob_theta_positive <- pnorm(
     0,
     process_means,

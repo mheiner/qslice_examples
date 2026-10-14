@@ -15,7 +15,6 @@ dte <- as.numeric(args[4]) # positive integer
 library("mcmcse") # multivariate effective sample size
 library("dplyr") # for subsetting data
 library("coda")
-library("truncnorm") # truncated normal distribution
 library("crch") # truncated t distribution
 library("qslice")
 
@@ -54,8 +53,8 @@ source("scripts/ct_gibbs/dhr_gibbs.R")
 
 ## sample/burnin must be proportional across methods for times to be comparable (includes burn in)
 if (round == "tune") {
-  (burnin <- ifelse(grepl("latent|multivariate", sampler_type), 10e3, 2e3))
-  (n_iter <- ifelse(grepl("latent|multivariate", sampler_type), 40e3, 8e3))
+  (burnin <- ifelse(grepl("latent|multivariate", sampler_type), 20e3, 1e3))
+  (n_iter <- ifelse(grepl("latent|multivariate", sampler_type), 15e3, 3e3))
   n_chains <- 2
 } else {
   (burnin <- ifelse(grepl("latent|multivariate", sampler_type), 10e3, 2e3))

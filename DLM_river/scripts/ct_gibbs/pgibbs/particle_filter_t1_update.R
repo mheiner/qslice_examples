@@ -21,7 +21,7 @@ particle_filter_t1_update <- function(
 
   sd_obs <- sqrt(sigma2)
   sd_sys <- sqrt(c(
-    v0 + tau2 * time_diff[1],
+    v0 + tau2 * time_diff[1], # corresponds with an unrestriced DLM that assumes theta0 integrated out, time diff from 0 to 1 is mean(time_diff)
     tau2 * time_diff[2:n]
   )) # already includes time diff from 0 to 1
 

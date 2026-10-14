@@ -1,7 +1,7 @@
 rm(list = ls())
 library("tidyverse")
 
-dte_sched <- 260703
+dte_sched <- 261014
 set.seed(dte_sched)
 
 n_reps <- 50
@@ -11,12 +11,12 @@ sample_sizes <- 117
 # datatype <- "sim"; sample_sizes <- 50
 
 types <- c(
-  "ffbs",
+  # "ffbs",
   "multivariate_slice",
   "latent_slice",
   "independence_metropolis",
-  "pits",
-  "Qslice",
+  "pits", # custom quantile slice sampler
+  # "Qslice",
   "pgibbs"
 )
 
@@ -24,7 +24,7 @@ tab_data <- expand.grid(data = datatype, sample_size = sample_sizes)
 tab_data
 
 tab_samplers_list <- list(
-  ffbs = data.frame(sampler = "ffbs", param = "", value = 0),
+  # ffbs = data.frame(sampler = "ffbs", param = "", value = 0),
   multivariate_slice = data.frame(
     sampler = "multivariate_slice",
     param = "width",
@@ -36,20 +36,20 @@ tab_samplers_list <- list(
     value = c(0.3)
   ),
   independence_metropolis = data.frame(
-    sampler = rep("independence_metropolis", 3),
-    param = c("t", "t", "normal"),
-    value = c(5, 100, Inf)
+    sampler = rep("independence_metropolis", 5),
+    param = c("t", "t", "t", "t", "normal"),
+    value = c(5, 20, 100, 500, Inf)
   ),
   pits = data.frame(
-    sampler = rep("pits", 3),
-    param = c("t", "t", "normal"),
-    value = c(5, 100, Inf)
+    sampler = rep("pits", 5),
+    param = c("t", "t", "t", "t", "normal"),
+    value = c(5, 20, 100, 500, Inf)
   ),
-  Qslice = data.frame(
-    sampler = rep("Qslice", 2),
-    param = c("t", "normal"),
-    value = c(5, Inf)
-  ),
+  # Qslice = data.frame(
+  #   sampler = rep("Qslice", 2),
+  #   param = c("t", "normal"),
+  #   value = c(5, Inf)
+  # ),
   pgibbs = data.frame(sampler = "pgibbs", param = "n_particles", value = c(25))
 )
 tab_samplers_list
