@@ -69,16 +69,14 @@ bs_icdf_trunc <- function(
 
   # Get last theta value from final filter distribution
   if (pseu_family == "normal") {
-    theta[n] <- crch::qtnorm(
+    theta[n] <- .qtnorm0(
       p = probabilities[n],
-      left = 0.0,
-      mean = filtered_means[n],
-      sd = sqrt(filtered_variance[n])
+      location = filtered_means[n],
+      scale = sqrt(filtered_variance[n])
     )
   } else if (pseu_family == "t") {
-    theta[n] <- crch::qtt(
+    theta[n] <- .qtt0(
       p = probabilities[n],
-      left = 0.0,
       location = filtered_means[n],
       scale = sqrt(filtered_variance[n]),
       df = pseu_params$df
@@ -110,16 +108,14 @@ bs_icdf_trunc <- function(
 
     # Using the calculated distribution and given probability find theta_i
     if (pseu_family == "normal") {
-      theta[i] <- crch::qtnorm(
+      theta[i] <- .qtnorm0(
         p = probabilities[i],
-        left = 0,
-        mean = bs_means[i],
-        sd = bs_stdev[i]
+        location = bs_means[i],
+        scale = bs_stdev[i]
       )
     } else if (pseu_family == "t") {
-      theta[i] <- crch::qtt(
+      theta[i] <- .qtt0(
         p = probabilities[i],
-        left = 0.0,
         location = bs_means[i],
         scale = bs_stdev[i],
         df = pseu_params$df

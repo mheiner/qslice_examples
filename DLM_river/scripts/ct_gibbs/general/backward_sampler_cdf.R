@@ -8,28 +8,18 @@ bs_pnorm <- function(theta, kalman_filter) {
 
 
 bs_pnorm_trunc <- function(theta, kalman_filter) {
-  require("crch")
-
   tmp <- bs_moments(theta, kalman_filter)
 
-  probabilities <- crch::ptnorm(
-    q = theta,
-    left = 0.0,
-    mean = tmp$means,
-    sd = tmp$stdev
-  )
+  probabilities <- .ptnorm0(q = theta, location = tmp$means, scale = tmp$stdev)
 
   return(probabilities)
 }
 
 bs_pt_trunc <- function(theta, kalman_filter, df) {
-  require("crch")
-
   tmp <- bs_moments(theta, kalman_filter)
 
-  probabilities <- crch::ptt(
+  probabilities <- .ptt0(
     q = theta,
-    left = 0.0,
     location = tmp$means,
     scale = tmp$stdev,
     df = df
