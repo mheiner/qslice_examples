@@ -2,8 +2,6 @@
 ### Particle Filter for DLM ###
 ###############################
 
-library("crch")
-
 particle_filter_update <- function(
   n_particles,
   ystar,
@@ -29,11 +27,11 @@ particle_filter_update <- function(
   # Generate the particle system
   # Generate the starting particles
   particles[1, 1] <- theta0 # this is time 0
-  particles[2:Np1, 1] <- crch::rtnorm(
+  particles[2:Np1, 1] <- truncnorm::rtruncnorm(
     n_particles,
     mean = m0,
     sd = sqrt(v0),
-    left = 0
+    a = 0
   )
   particles[1, 2:(n + 1)] <- old_theta
 
@@ -53,11 +51,11 @@ particle_filter_update <- function(
     ) # fixes a typo(?) in Algo 15.5
 
     # Generate proposed particle trajectory to next time point
-    particles[2:Np1, tt + 1] <- crch::rtnorm(
+    particles[2:Np1, tt + 1] <- truncnorm::rtruncnorm(
       n_particles,
       mean = particles[A[2:Np1, tt], tt],
       sd = sd_sys[tt],
-      left = 0
+      a = 0
     ) # when tt = 1 this is propagating from time 0 to time 1
 
     # Weight the new particles by their likelihoods
@@ -79,13 +77,19 @@ particle_filter_update <- function(
   )
   star_trajectory[n] <- particles[B[n], n + 1]
   for (tt in (n - 1):1) {
-    state_log_likelihoods <- crch::dtnorm(
-      x = star_trajectory[tt + 1],
+    state_log_likelihoods <- dnorm(
+      star_trajectory[tt + 1],
       mean = particles[, tt + 1],
       sd = sd_sys[tt + 1],
-      left = 0,
       log = TRUE
-    ) # particles has n+1 col, so tt+1 col corresponds to time tt; ALGORITHM AS WRITTEN
+    ) -
+      pnorm(
+        0,
+        mean = particles[, tt + 1],
+        sd = sd_sys[tt + 1],
+        lower.tail = FALSE,
+        log.p = TRUE
+      ) # particles has n+1 col, so tt+1 col corresponds to time tt; ALGORITHM AS WRITTEN
     lp_now <- logweights[, tt + 1] + state_log_likelihoods
     B[tt] <- sample.int(
       Np1,
@@ -94,13 +98,19 @@ particle_filter_update <- function(
     )
     star_trajectory[tt] <- particles[B[tt], tt + 1]
   }
-  state_log_likelihoods <- crch::dtnorm(
-    x = star_trajectory[1],
+  state_log_likelihoods <- dnorm(
+    star_trajectory[1],
     mean = particles[, 1],
     sd = sd_sys[1],
-    left = 0,
     log = TRUE
-  )
+  ) -
+    pnorm(
+      0,
+      mean = particles[, 1],
+      sd = sd_sys[1],
+      lower.tail = FALSE,
+      log.p = TRUE
+    )
   b0 <- sample.int(
     Np1,
     size = 1,

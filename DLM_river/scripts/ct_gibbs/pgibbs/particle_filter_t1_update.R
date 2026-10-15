@@ -13,7 +13,7 @@ particle_filter_t1_update <- function(
   old_theta,
   time_diff
 ) {
-  require("crch")
+  require("truncnorm")
 
   # Extract length of the time series
   n <- length(ystar)
@@ -34,11 +34,11 @@ particle_filter_t1_update <- function(
   # Generate the particle system
   # Generate the starting particles
   particles[1, 1:n] <- old_theta
-  particles[2:Np1, 1] <- crch::rtnorm(
+  particles[2:Np1, 1] <- truncnorm::rtruncnorm(
     n_particles,
     mean = m0,
     sd = sd_sys[1],
-    left = 0
+    a = 0
   )
   logweights[, 1] <- dnorm(
     ystar[1],
@@ -60,11 +60,11 @@ particle_filter_t1_update <- function(
     ) # fixes a typo in Algo 15.5
 
     # Generate proposed particle trajectory to next time point
-    particles[2:Np1, tt] <- crch::rtnorm(
+    particles[2:Np1, tt] <- truncnorm::rtruncnorm(
       n_particles,
       mean = particles[A[2:Np1, tt], tt - 1],
       sd = sd_sys[tt],
-      left = 0
+      a = 0
     ) # when tt = 2 this is propagating from time 1 to 2
 
     # Weight the new particles by their likelihoods
@@ -86,13 +86,20 @@ particle_filter_t1_update <- function(
   )
   star_trajectory[n] <- particles[B[n], n]
   for (tt in (n - 1):1) {
-    state_log_likelihoods <- crch::dtnorm(
-      x = star_trajectory[tt + 1],
+    state_log_likelihoods <- dnorm(
+      star_trajectory[tt + 1],
       mean = particles[, tt],
       sd = sd_sys[tt + 1],
-      left = 0,
       log = TRUE
-    )
+    ) -
+      pnorm(
+        0,
+        mean = particles[, tt],
+        sd = sd_sys[tt + 1],
+        lower.tail = FALSE,
+        log.p = TRUE
+      )
+
     lp_now <- logweights[, tt] + state_log_likelihoods
     B[tt] <- sample.int(
       Np1,

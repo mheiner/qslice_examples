@@ -69,9 +69,9 @@ bs_icdf_trunc <- function(
 
   # Get last theta value from final filter distribution
   if (pseu_family == "normal") {
-    theta[n] <- qtruncnorm(
+    theta[n] <- crch::qtnorm(
       p = probabilities[n],
-      a = 0.0,
+      left = 0.0,
       mean = filtered_means[n],
       sd = sqrt(filtered_variance[n])
     )
@@ -110,9 +110,9 @@ bs_icdf_trunc <- function(
 
     # Using the calculated distribution and given probability find theta_i
     if (pseu_family == "normal") {
-      theta[i] <- qtruncnorm(
+      theta[i] <- crch::qtnorm(
         p = probabilities[i],
-        a = 0,
+        left = 0,
         mean = bs_means[i],
         sd = bs_stdev[i]
       )

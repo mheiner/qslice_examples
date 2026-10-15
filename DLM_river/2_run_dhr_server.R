@@ -15,7 +15,8 @@ dte <- as.numeric(args[4]) # positive integer
 library("mcmcse") # multivariate effective sample size
 library("dplyr") # for subsetting data
 library("coda")
-library("crch") # truncated t distribution
+library("truncnorm") # truncated normal
+library("crch") # truncated t
 library("qslice")
 
 sessionInfo()

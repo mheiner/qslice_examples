@@ -22,7 +22,6 @@ dhr <- function(
 ) {
   require("coda")
   require("coda")
-  require("crch")
   require("qslice")
 
   # Store the dhr function environment

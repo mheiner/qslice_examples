@@ -75,9 +75,7 @@ bs_likelihood_constrained <- function(
 
     llik0 <- dnorm(theta, tmp$means, tmp$stdev, log = TRUE)
   } else if (pseu_family == "t") {
-    require("crch")
-
-    log_normaliz_cnst <- ptt(
+    log_normaliz_cnst <- crch::ptt(
       0.0,
       location = tmp$means,
       scale = tmp$stdev,
@@ -86,7 +84,7 @@ bs_likelihood_constrained <- function(
       log.p = TRUE
     )
 
-    llik0 <- dtt(
+    llik0 <- crch::dtt(
       theta,
       location = tmp$means,
       scale = tmp$stdev,
