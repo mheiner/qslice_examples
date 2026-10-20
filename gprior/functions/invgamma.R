@@ -57,6 +57,6 @@ dsqrtinvgamma <- function(x, igsh, igsc, log = FALSE) {
         out <- dinvgamma(x^2, shape = igsh, scale = igsc, log = FALSE) * 2.0 * x
       }
     }
+    out
   })
-  out
 }
