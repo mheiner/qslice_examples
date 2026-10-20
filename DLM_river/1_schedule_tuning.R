@@ -1,44 +1,24 @@
 rm(list = ls())
 library("tidyverse")
 
-dte_sched <- 240603
-dte_sched <- 2406033
-dte_sched <- 240606
+dte_sched <- 261016
 set.seed(dte_sched)
 
-n_reps <- 20
+n_reps <- 10
 
 # datatype <- "high-smooth"; sample_sizes <- 60
 # datatype <- "low-smooth"
-datatype <- "river"
-sample_sizes <- 60
+# datatype <- "river"
+# sample_sizes <- 60
 datatype <- "river_long"
 sample_sizes <- 117
 # datatype <- "river_long"; sample_sizes <- 190
 # datatype <- "river_long"; sample_sizes <- 40
 # sample_sizes <- c(60, 120, 240)
 
-types <- "multivariate_slice"
-types <- "latent_slice"
-types <- c("Qslice", "pgibbs")
-types <- c("pits", "independence_metropolis")
-types <- c("ffbs", "independence_metropolis", "Qslice", "pgibbs")
-types <- c(
-  "ffbs",
-  "multivariate_slice",
-  "latent_slice",
-  "independence_metropolis",
-  "Qslice",
-  "pgibbs"
-)
-types <- c(
-  "multivariate_slice",
-  "latent_slice",
-  "independence_metropolis",
-  "pits",
-  "pgibbs"
-)
-types <- c("multivariate_slice", "latent_slice", "pits", "Qslice", "pgibbs")
+# types <- "multivariate_slice"
+# types <- "latent_slice"
+types <- c("multivariate_slice", "latent_slice", "pgibbs")
 
 tab_data <- expand.grid(data = datatype, sample_size = sample_sizes)
 tab_data
@@ -47,32 +27,35 @@ tab_samplers_list <- list(
   multivariate_slice = data.frame(
     sampler = "multivariate_slice",
     param = "width",
-    value = c(0.2, 0.5, 1.0, 2.0, 5.0)
+    # value = c(0.2, 0.5, 1.0, 2.0, 5.0)) # 0.2 was best among these
+    value = c(0.01, 0.05, 0.1, 0.3, 1.0, 5.0)
   ),
   latent_slice = data.frame(
     sampler = "latent_slice",
     param = "latent_scale",
-    value = c(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0)
+    # value = c(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0)) # 0.1 was best among these
+    value = c(0.005, 0.01, 0.05, 0.1, 0.3, 1.0)
   ),
-  independence_metropolis = data.frame(
-    sampler = rep("independence_metropolis", 2),
-    param = c(rep("t", 1), "normal"),
-    value = c(5, Inf)
-  ),
-  pits = data.frame(
-    sampler = rep("pits", 2),
-    param = c(rep("t", 1), "normal"),
-    value = c(5, Inf)
-  ),
-  Qslice = data.frame(
-    sampler = rep("Qslice", 2),
-    param = c("t", "normal"),
-    value = c(5, Inf)
-  ),
+  # independence_metropolis = data.frame(
+  #   sampler = rep("independence_metropolis", 2),
+  #   param = c(rep("t", 1), "normal"),
+  #   value = c(5, Inf)
+  # ),
+  # pits = data.frame(
+  #   sampler = rep("pits", 2),
+  #   param = c(rep("t", 1), "normal"),
+  #   value = c(5, Inf)
+  # ),
+  # Qslice = data.frame(
+  #   sampler = rep("Qslice", 2),
+  #   param = c("t", "normal"),
+  #   value = c(5, Inf)
+  # ),
   pgibbs = data.frame(
     sampler = "pgibbs",
     param = "n_particles",
-    value = c(10, 15, 20, 25, 50)
+    # value = c(10, 15, 20, 25, 50) # 25 was best among these
+    value = c(20, 25, 30, 35, 40)
   )
 )
 tab_samplers_list

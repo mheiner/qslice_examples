@@ -3,7 +3,7 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export VECLIB_MAXIMUM_THREADS=1
 
-dte=241014
+dte=261015
 
 num_of_trials=$(Rscript scripts/num_of_trials.R river_long test)
 echo $num_of_trials

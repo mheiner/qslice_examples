@@ -10,7 +10,8 @@ targets <- "db"
 # dte <- 260518
 # dte <- 260520 # includes samples_reg
 # dte <- 260521 # includes samples_reg with pseudo_opt on residuals
-dte <- 261006 # with qslice v0.4.0
+# dte <- 261006 # with qslice v0.4.0
+dte <- 261019
 
 reference_algo <- "rw"
 reference_tnx <- "tau2_marg-log" # $ at end means no -log appended
@@ -44,33 +45,33 @@ str(dat)
 
 ## hack to create a placeholder for run combinations that did not occur
 
-for (i in 1:2) {
-  dat[nrow(dat) + 1, ] <- NA
-  dat[nrow(dat), c("target", "type", "subtype")] <- c(
-    "db40_tau2_marg",
-    "imh",
-    "samples_reg"
-  )
-  dat[nrow(dat), c("sampPsec_rel")] <- dat[nrow(dat), c("sampPiter_rel")] <- 1.0
-}
-for (i in 1:2) {
-  dat[nrow(dat) + 1, ] <- NA
-  dat[nrow(dat), c("target", "type", "subtype")] <- c(
-    "db40_tau2_marg",
-    "gess",
-    "samples_reg"
-  )
-  dat[nrow(dat), c("sampPsec_rel")] <- dat[nrow(dat), c("sampPiter_rel")] <- 1.0
-}
-for (i in 1:2) {
-  dat[nrow(dat) + 1, ] <- NA
-  dat[nrow(dat), c("target", "type", "subtype")] <- c(
-    "db40_tau2_marg",
-    "Qslice",
-    "samples_reg"
-  )
-  dat[nrow(dat), c("sampPsec_rel")] <- dat[nrow(dat), c("sampPiter_rel")] <- 1.0
-}
+# for (i in 1:2) {
+#   dat[nrow(dat) + 1, ] <- NA
+#   dat[nrow(dat), c("target", "type", "subtype")] <- c(
+#     "db40_tau2_marg",
+#     "imh",
+#     "samples_reg"
+#   )
+#   dat[nrow(dat), c("sampPsec_rel")] <- dat[nrow(dat), c("sampPiter_rel")] <- 1.0
+# }
+# for (i in 1:2) {
+#   dat[nrow(dat) + 1, ] <- NA
+#   dat[nrow(dat), c("target", "type", "subtype")] <- c(
+#     "db40_tau2_marg",
+#     "gess",
+#     "samples_reg"
+#   )
+#   dat[nrow(dat), c("sampPsec_rel")] <- dat[nrow(dat), c("sampPiter_rel")] <- 1.0
+# }
+# for (i in 1:2) {
+#   dat[nrow(dat) + 1, ] <- NA
+#   dat[nrow(dat), c("target", "type", "subtype")] <- c(
+#     "db40_tau2_marg",
+#     "Qslice",
+#     "samples_reg"
+#   )
+#   dat[nrow(dat), c("sampPsec_rel")] <- dat[nrow(dat), c("sampPiter_rel")] <- 1.0
+# }
 for (i in 1:2) {
   dat[nrow(dat) + 1, ] <- NA
   dat[nrow(dat), c("target", "type", "subtype")] <- c(
@@ -214,65 +215,6 @@ ggplot(
 
 
 ## timing results
-plt <- ggplot(
-  dat_plt %>% filter(grepl("tau2_marg$", target)),
-  aes(
-    x = sampPsec / median(sampPsec[which(algo == "gess")]),
-    y = algoF,
-    fill = typeF
-  ),
-  color = "gray"
-) +
-  geom_violin(draw_quantiles = 0.5, scale = "width") +
-  theme_bw() +
-  theme(legend.position = "none") +
-  scale_alpha(guide = "none") +
-  xlab("Effective samples per second") +
-  ylab("") +
-  labs(color = "", fill = "")
-
-plt
-
-ggsave(
-  plot = plt,
-  width = 6,
-  height = 6,
-  filename = paste0("plots/ESPS_primary_", dte, ".pdf")
-)
-
-
-plt <- ggplot(
-  dat_plt %>% filter(grepl("tau2_marg", target)),
-  aes(
-    x = sampPsec /
-      median(sampPsec[which(algo == "stepping" & grepl("tau2_marg$", target))]),
-    y = algoF,
-    fill = typeF,
-    color = target_tx,
-    alpha = target_tx_alpha
-  )
-) +
-  # geom_boxplot() +
-  geom_violin(draw_quantiles = 0.5, scale = "width") +
-  theme_bw() +
-  theme(legend.position = "none") +
-  scale_alpha(guide = "none") +
-  expand_limits(x = 0) +
-  xlab("Effective samples per second") +
-  ylab("") +
-  labs(color = "", fill = "") +
-  scale_color_manual(values = c("gray", "black"))
-
-plt
-
-ggsave(
-  plot = plt,
-  width = 6,
-  height = 6,
-  filename = paste0("plots/ESPS_w_tnx_", dte, ".pdf")
-)
-
-
 ## add evals per iter on paneled plot
 
 # n_select <- 40
@@ -467,6 +409,8 @@ plt_panel <- plt_esps +
   plt_espit &
   scale_x_continuous(limits = xlim, breaks = c(0.5, 1.0, 1.5, 2.0, 2.5))
 
+plt_panel
+
 ggsave(
   plot = plt_panel,
   width = 8,
@@ -475,10 +419,9 @@ ggsave(
 )
 
 
-dat_plt <- dat %>% filter(n %in% c(40))
+# dat_plt <- dat %>% filter(n %in% c(40))
 dat_plt <- dat %>% filter(n %in% c(442))
-dat_plt <- dat %>% filter(n %in% c(40, 442))
-
+# dat_plt <- dat %>% filter(n %in% c(40, 442))
 
 ## diagnostic
 

@@ -1,8 +1,19 @@
 ## authors: Sam Johnnson, Matt Heiner
 
+if (n_extra > 0) {
+  ld_use <- function(x) {
+    doextra(n_extra)
+    dnorm(x, log = TRUE)
+  }
+} else {
+  ld_use <- function(x) {
+    dnorm(x, log = TRUE)
+  }
+}
+
 truth <- list(
   d = function(x) dnorm(x),
-  ld = function(x) dnorm(x, log = TRUE),
+  ld = ld_use,
   p = function(x) pnorm(x),
   q = function(u) qnorm(u),
   lb = -Inf,

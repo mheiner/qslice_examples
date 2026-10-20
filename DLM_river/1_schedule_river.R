@@ -1,7 +1,7 @@
 rm(list = ls())
 library("tidyverse")
 
-dte_sched <- 261014
+dte_sched <- 261016
 set.seed(dte_sched)
 
 n_reps <- 50
@@ -28,22 +28,22 @@ tab_samplers_list <- list(
   multivariate_slice = data.frame(
     sampler = "multivariate_slice",
     param = "width",
-    value = c(1.5)
+    value = c(0.1)
   ),
   latent_slice = data.frame(
     sampler = "latent_slice",
     param = "latent_scale",
-    value = c(0.3)
+    value = c(0.05)
   ),
   independence_metropolis = data.frame(
-    sampler = rep("independence_metropolis", 5),
-    param = c("t", "t", "t", "t", "normal"),
-    value = c(5, 20, 100, 500, Inf)
+    sampler = rep("independence_metropolis", 4),
+    param = c("t", "t", "t", "normal"),
+    value = c(5, 20, 100, Inf)
   ),
   pits = data.frame(
-    sampler = rep("pits", 5),
-    param = c("t", "t", "t", "t", "normal"),
-    value = c(5, 20, 100, 500, Inf)
+    sampler = rep("pits", 4),
+    param = c("t", "t", "t", "normal"),
+    value = c(5, 20, 100, Inf)
   ),
   # Qslice = data.frame(
   #   sampler = rep("Qslice", 2),

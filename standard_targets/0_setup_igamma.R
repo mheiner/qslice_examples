@@ -5,13 +5,22 @@ source("functions/invgamma.R")
 
 gshape <- 2.0
 
+if (n_extra > 0) {
+  ld_use <- function(x) {
+    doextra(n_extra)
+    dinvgamma(x, shape = gshape, scale = 1.0, log = TRUE)
+  }
+} else {
+  ld_use <- function(x) {
+    dinvgamma(x, shape = gshape, scale = 1.0, log = TRUE)
+  }
+}
+
 truth <- list(
   d = function(x) {
     dinvgamma(x, shape = gshape, scale = 1.0)
   },
-  ld = function(x) {
-    dinvgamma(x, shape = gshape, scale = 1.0, log = TRUE)
-  },
+  ld = ld_use,
   p = function(x) {
     pinvgamma(x, shape = gshape, scale = 1.0)
   },

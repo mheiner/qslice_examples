@@ -1,10 +1,11 @@
 args <- commandArgs(trailingOnly = TRUE)
 ii <- as.numeric(args[1]) # job id
 dte <- as.numeric(args[2])
+n_extra <- as.numeric(args[3]) # unnecessary calculations to control cost of the log-target (n_extra <- 0 for original log-target)
 
 ##### for testing
-# ii <- 5
-# dte <- 260928
+# ii <- 1
+# dte <- 261019
 #####
 
 source("0_setup.R")

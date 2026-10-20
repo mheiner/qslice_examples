@@ -2,7 +2,8 @@ rm(list = ls())
 
 library("tidyverse")
 
-dte <- 241015 # R version 4.6.1
+dte <- 261015 # R version 4.6.1; f04
+dte <- 261016 # R version 4.6.1; f04 extra tuning
 
 # round <- "tune"
 round <- "test"
@@ -35,6 +36,8 @@ dat %>%
     esps_mean_sd = sd(ess_theta_mean / sec),
     esps_min_mn = mean(ess_theta_min / sec),
     esps_min_sd = sd(ess_theta_min / sec),
+    espit_mean_mn = mean(100 * ess_theta_mean / n_iter_tot),
+    espit_mean_sd = sd(100 * ess_theta_mean / n_iter_tot),
     neval_p_iter_mn = mean(
       (rejections_mean * n_chains + 2 * 2 * 1.1 * n_iter_chain * n_chains) /
         (1.1 * n_iter_chain * n_chains * 2)

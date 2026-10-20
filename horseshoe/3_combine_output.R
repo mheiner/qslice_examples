@@ -1,6 +1,6 @@
-dte <- 261006
+dte <- 261019
 
-data_now <- "db40"
+# data_now <- "db40"
 data_now <- "db"
 
 files_all <- list.files("output")

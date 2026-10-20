@@ -3,14 +3,24 @@
 
 gshape <- 2.5
 
+if (n_extra > 0) {
+  ld_use <- function(x) {
+    doextra(n_extra)
+    dgamma(x, shape = gshape, scale = 1.0, log = TRUE) +
+      ifelse(x > 0.0, 0.0, -Inf)
+  }
+} else {
+  ld_use <- function(x) {
+    dgamma(x, shape = gshape, scale = 1.0, log = TRUE) +
+      ifelse(x > 0.0, 0.0, -Inf)
+  }
+}
+
 truth <- list(
   d = function(x) {
     dgamma(x, shape = gshape, scale = 1.0) * (x > 0.0)
   },
-  ld = function(x) {
-    dgamma(x, shape = gshape, scale = 1.0, log = TRUE) +
-      ifelse(x > 0.0, 0.0, -Inf)
-  },
+  ld = ld_use,
   p = function(x) {
     pgamma(x, shape = gshape, scale = 1.0)
   },

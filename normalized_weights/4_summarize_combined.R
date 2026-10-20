@@ -40,9 +40,9 @@ pseudos_now <- c("data", "samples")
 pseudos_now <- "data"
 pseudos_now <- "samples"
 
-K_now <- 10
+# K_now <- 10
 K_now <- 20
-K_now <- 40
+# K_now <- 40
 
 dat <- dat0 %>%
   filter(target %in% targets_now, K %in% K_now, pseudo %in% pseudos_now)
@@ -415,3 +415,31 @@ plt <- ggplot(
   facet_wrap(~target, scales = "free_x")
 
 plt
+
+## combined table
+dat %>%
+  group_by(sampler) %>%
+  summarize(
+    ESpSr_mn = mean(
+      (ESSZ_mean_total / userTime_total) /
+        (ESSZ_mean_total_ref / userTime_total_ref)
+    ),
+    ESpSr_sd = sd(
+      (ESSZ_mean_total / userTime_total) /
+        (ESSZ_mean_total_ref / userTime_total_ref)
+    ),
+    ESpSminR_mn = mean(ESpSZ_min_avg / ESpSZ_min_avg_ref),
+    ESpSminR_sd = sd(ESpSZ_min_avg / ESpSZ_min_avg_ref),
+    ESpIt_mn = mean(espitZ_avg / espitZ_avg_ref),
+    ESpIt_sd = sd(espitZ_avg / espitZ_avg_ref)
+  )
+
+dat %>%
+  group_by(sampler) %>%
+  summarize(neval_mn = mean(nEval_mean), neval_sd = sd(nEval_mean))
+dat %>%
+  group_by(sampler) %>%
+  summarize(
+    Rhat_mn = mean((Rhat_u95_avg - 1) * 1000, na.rm = TRUE),
+    Rhat_sd = sd((Rhat_u95_avg - 1) * 1000, na.rm = TRUE)
+  )

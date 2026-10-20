@@ -3,8 +3,8 @@ ii <- as.numeric(args[1]) # job id
 dte <- as.numeric(args[2])
 
 ##### for testing
-# ii <- 3
-# dte <- 241008
+# ii <- 1
+# dte <- 241019
 #####
 
 library("qslice")

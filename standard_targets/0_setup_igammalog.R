@@ -1,12 +1,21 @@
 gshape <- 2.0
 
+if (n_extra > 0) {
+  ld_use <- function(x) {
+    doextra(n_extra)
+    dgamma(exp(-x), shape = gshape, log = TRUE) - x
+  }
+} else {
+  ld_use <- function(x) {
+    dgamma(exp(-x), shape = gshape, log = TRUE) - x
+  }
+}
+
 truth <- list(
   d = function(x) {
     dgamma(exp(-x), shape = gshape) * exp(-x)
   },
-  ld = function(x) {
-    dgamma(exp(-x), shape = gshape, log = TRUE) - x
-  },
+  ld = ld_use,
   p = function(x) {
     1.0 - pgamma(exp(-x), shape = gshape)
   },

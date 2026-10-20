@@ -11,7 +11,8 @@ dte <- 260822 # f06 server, 24 jobs in parallel, error handling
 dte <- 260928 # f07 server, 32 jobs in parallel, diagnostic mode off
 dte <- 261006 # f06 server, 32 jobs parallel, diagnostic mode off
 dte <- 261008 # f04 server, 32 jobs parallel, diagnostic mode off; multiple psuedo_opt tries
-
+dte <- 26101420 # f04 server, 32 jobs parallel, same as 261008 but with n_extra = 20
+dte <- 261019 # f04 server, 32 jobs parallel, same as 261008 but with n_extra = 20
 
 if (length(targets) == 1 && targets == "all") {
   dat <- read.csv(paste0("output/combined_all_", dte, ".csv"))
