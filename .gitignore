@@ -7,4 +7,5 @@
 **/*.csv
 **/*.pdf
 **/*.DS_store
+**/*.zip
 /DirichletMultinomial
