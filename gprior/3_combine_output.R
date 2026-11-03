@@ -11,10 +11,11 @@ str(out)
 # system(paste("rm ", paste0("output/*.csv")))
 # system(paste("rm ", paste0("logs/*.txt")))
 
+(file_write <- paste0("output/combined_all_", dte, ".csv"))
 write.csv(
-  file = paste0("output/combined_all_", dte, ".csv"),
+  file = file_write,
   out,
   row.names = FALSE
 )
 
-system("ls output")
+# system("ls output")

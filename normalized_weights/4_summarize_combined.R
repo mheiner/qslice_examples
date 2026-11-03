@@ -5,6 +5,7 @@ dte <- 260704 # f06; K = 20; C ~ lognormal(0, sig = 2.0); burn-in with GESS
 dte <- 261012 # f04; K = 20; C ~ lognormal(0, sig = 2.0); robust theta and C calc
 dte <- 26101240 # f06; K = 40; C ~ lognormal(0, sig = 2.0); burn-in with GESS
 dte <- 261013 # f04; K = 20; C ~ lognormal(-1.5, sig = 1.5)
+dte <- 261102 # f06; same as 261013 except ALL logit pseudos use 5 df
 
 # load(paste0("input/schedule_all_", dte, ".rda"))
 dat0 <- read.csv(paste0("output/combined_all_", dte, ".csv"))
@@ -36,7 +37,7 @@ targets_now <- "unordered"
 targets_now <- "decreasing"
 targets_now <- c("unordered", "decreasing")
 
-pseudos_now <- c("data", "samples")
+# pseudos_now <- c("data", "samples")
 pseudos_now <- "data"
 pseudos_now <- "samples"
 
@@ -296,7 +297,11 @@ plt <- ggplot(
 
 plt
 
-# ggsave(filename = paste0("plots/esps_rat_", dte, ".pdf"), width = 7, height = 8)
+# ggsave(
+#   filename = paste0("plots/esps_rat_pseudo_", pseudos_now, "_", dte, ".pdf"),
+#   width = 7,
+#   height = 8
+# )
 
 dat %>%
   group_by(sampler) %>%
@@ -385,6 +390,12 @@ plt <- ggplot(
   facet_wrap(~target, scales = "free_x")
 
 plt
+
+# ggsave(
+#   filename = paste0("plots/espit_rat_pseudo_", pseudos_now, "_", dte, ".pdf"),
+#   width = 7,
+#   height = 8
+# )
 
 dat %>%
   group_by(sampler) %>%

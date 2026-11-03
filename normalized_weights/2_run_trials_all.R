@@ -108,13 +108,11 @@ pseudo <- list(
   shape2 = pseudo_ref_rcs_use,
   mu = cand_mu,
   Sig = cand_Sig,
-  df = ifelse(sampler %in% c("QSS_logit", "IMH_logit"), 10, 5),
+  df = 5,
   static = TRUE # will change according to settings
 )
 
 pseudo_pilot <- pseudo
-pseudo_pilot$df <- 5 # fixed pilot setting for every sampler
-
 tuning_params <- list(w_step_rz = 1.0, w = 2, latent_scale = 1.0, Cscale = 0.6)
 
 ## initialize one chain

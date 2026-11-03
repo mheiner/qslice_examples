@@ -11,7 +11,7 @@ targets <- "db"
 # dte <- 260520 # includes samples_reg
 # dte <- 260521 # includes samples_reg with pseudo_opt on residuals
 # dte <- 261006 # with qslice v0.4.0
-dte <- 261019
+dte <- 261019 # f04 server w qslice v0.4.0
 
 reference_algo <- "rw"
 reference_tnx <- "tau2_marg-log" # $ at end means no -log appended
